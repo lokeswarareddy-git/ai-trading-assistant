@@ -71,3 +71,32 @@ DATABASE_URL = "sqlite:///./trades.db"
 
 SQLite is fine for MVP
 Not ideal for scaling (we’ll fix later)
+
+
+☁️ Step 4: Deploy on Render
+
+Go to Render
+Click New Web Service
+Connect GitHub repo
+Fill:
+Build command:
+pip install -r requirements.txt
+Start command:
+uvicorn main:app --host 0.0.0.0 --port 10000
+
+
+https://ai-trading-assistant-2ji8.onrender.com/docs
+
+
+
+🌍 Step 5: Access Your API
+
+You’ll get a URL like:
+
+https://your-app.onrender.com
+
+Test:
+
+/docs → Swagger UI
+/trade
+/trades
