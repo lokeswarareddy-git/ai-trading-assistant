@@ -100,3 +100,15 @@ Test:
 /docs → Swagger UI
 /trade
 /trades
+
+
+🔄 Step 6: Upgrade Database (Next Step)
+
+When ready, switch to:
+
+PostgreSQL
+
+Render gives free PostgreSQL:
+
+Just replace DATABASE_URL
+No code changes needed
