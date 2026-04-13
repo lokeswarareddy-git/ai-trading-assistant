@@ -4,5 +4,5 @@ class TradeCreate(BaseModel):
     entry_price: float
     exit_price: float
     quantity: int
-    stratagy: str
+    strategy: str
     notes: str

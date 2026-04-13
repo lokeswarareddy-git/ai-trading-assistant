@@ -13,7 +13,7 @@ def create_trade(db: Session, trade):
         entry_price=trade.entry_price,
         exit_price=trade.exit_price,
         quantity=trade.quantity,
-        stratagy=trade.stratagy,
+        strategy=trade.strategy,
         notes=trade.notes,
         pnl=pnl
     )

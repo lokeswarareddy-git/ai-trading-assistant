@@ -8,6 +8,6 @@ class Trade(Base):
     entry_price = Column(Float)
     exit_price = Column(Float)
     quantity= Column(Integer)
-    stratagy = Column(String)
+    strategy = Column(String)
     notes = Column(String)
     pnl = Column(Float)
