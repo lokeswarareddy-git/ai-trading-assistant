@@ -26,7 +26,8 @@ if st.button("Submit Trade"):
     }
 
     res = requests.post(f"{API_URL}/trade", json=payload)
-
+    st.write("STATUS:", res.status_code)
+    st.write("RESPONSE:", res.text)
     if res.status_code == 200:
         st.success("Trade added successfully!")
         st.json(res.json())
