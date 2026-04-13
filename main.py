@@ -6,10 +6,16 @@ from sqlalchemy import text
 import models, schemas, crud
 from database import SessionLocal, engine
 
-# ✅ THIS LINE MUST RUN ON STARTUP
-models.Base.metadata.create_all(bind=engine)
+# # ✅ THIS LINE MUST RUN ON STARTUP
+# models.Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI()
+
+# ✅ BEST PRACTICE: run on startup
+@app.on_event("startup")
+def startup():
+    models.Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
