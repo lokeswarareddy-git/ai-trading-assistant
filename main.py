@@ -9,7 +9,6 @@ from database import SessionLocal, engine
 # # ✅ THIS LINE MUST RUN ON STARTUP
 # models.Base.metadata.create_all(bind=engine)
 
-
 app = FastAPI()
 
 # ✅ BEST PRACTICE: run on startup
@@ -24,7 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 #Dependancy
 def get_db():
     db = SessionLocal()
