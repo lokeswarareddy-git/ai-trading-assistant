@@ -1,7 +1,9 @@
 import streamlit as st
 import requests
 API_URL = "https://ai-trading-assistant-2ji8.onrender.com/"
-st.title("AI Trading Journal")
+st.set_page_config(page_title="Trading Journal", layout="wide")
+
+st.title("📈 AI Trading Assistant")
 
 # ------------------------
 # ➕ ADD TRADE SECTION
