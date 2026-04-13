@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-
+from typing import List
 import models, schemas, crud
 from database import SessionLocal, engine
 
@@ -35,7 +35,7 @@ def get_db():
 def add_trade(trade: schemas.TradeCreate, db: Session = Depends(get_db)):
     return crud.create_trade(db, trade)
 
-@app.get("/trades")
+@app.get("/trades", response_model=List[schemas.TradeOut])
 def read_trades(db: Session = Depends(get_db)):
     return crud.get_trades(db)
 
