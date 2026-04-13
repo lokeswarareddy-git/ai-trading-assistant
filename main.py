@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 import models, schemas, crud
 from database import SessionLocal, engine
@@ -33,3 +34,10 @@ def add_trade(trade: schemas.TradeCreate, db: Session = Depends(get_db)):
 @app.get("/trades")
 def read_trades(db: Session = Depends(get_db)):
     return crud.get_trades(db)
+
+
+@app.delete("/dev/reset-trades")
+def reset_trades():
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS trades"))
+    return {"message": "trades table dropped"}
