@@ -112,3 +112,8 @@ Render gives free PostgreSQL:
 
 Just replace DATABASE_URL
 No code changes needed
+
+
+V0 is completed lets start with V1:
+===============
+Step 1 (V1 upgrade) cleanly and correctly. You are adding only: ⏱ timestamp 📈 side (BUY / SELL) 🧠 strategy
