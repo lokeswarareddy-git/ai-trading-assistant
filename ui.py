@@ -61,13 +61,30 @@ if menu == "View Trades":
     st.header("Trades")
 
     if st.button("Load Trades"):
-        res = requests.get(f"{API_URL}/trades")
+        with st.spinner("Loading trades..."):
+            try:
+                res = requests.get(f"{API_URL}/trades", timeout=10)
 
-        if res.status_code == 200:
-            st.dataframe(res.json())
-        else:
-            st.error("Failed to load trades")
+                if res.status_code == 200:
+                    data = res.json()
 
+                    if data:
+                        st.dataframe(data)
+                        st.write(f"Total Trades: {len(data)}")
+                    else:
+                        st.info("No trades found")
+
+                else:
+                    st.error(f"Failed to load trades (Status: {res.status_code})")
+
+            except requests.exceptions.Timeout:
+                st.error("Request timed out. Backend may be waking up (Render free tier).")
+
+            except requests.exceptions.ConnectionError:
+                st.error("Unable to connect to backend. Check API URL.")
+
+            except Exception as e:
+                st.error(f"Unexpected error: {str(e)}")
 # ------------------------
 # 📊 DASHBOARD (STATS)
 # ------------------------
