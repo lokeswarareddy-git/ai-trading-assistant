@@ -96,6 +96,10 @@ if menu == "Dashboard":
 
     if res.status_code == 200:
         stats = res.json()
+        # ✅ Handle empty state
+        if stats["total_trades"] == 0:
+            st.info("No trades yet. Add trades to see analytics.")
+            st.stop()
 
         # --- KPI CARDS ---
         col1, col2, col3, col4 = st.columns(4)

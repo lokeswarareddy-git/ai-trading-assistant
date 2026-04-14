@@ -20,7 +20,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
 
     # 1. Calculate PnL
 
-    pnl = (trade.entry_price - trade.exit_price)* trade.quantity * -1
+    #pnl = (trade.entry_price - trade.exit_price)* trade.quantity * -1
 
     # 2. Create the Database Model instance.
     db_trade = models.Trade(
