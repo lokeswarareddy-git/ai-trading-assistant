@@ -10,23 +10,9 @@ st.caption("Track trades. Improve discipline. Build consistency.")
 
 menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades", "Dashboard"])
 
-
-# =========================================================
-# 🚀 CACHED API CALLS (IMPORTANT FIX FOR 429 ISSUE)
-# =========================================================
-@st.cache_data(ttl=10)
-def get_trades():
-    return requests.get(f"{API_URL}/trades", timeout=10).json()
-
-
-@st.cache_data(ttl=10)
-def get_stats():
-    return requests.get(f"{API_URL}/stats", timeout=10).json()
-
-
-# =========================================================
+# ------------------------
 # ➕ ADD TRADE
-# =========================================================
+# ------------------------
 if menu == "Add Trade":
 
     st.header("Add Trade")
@@ -37,10 +23,12 @@ if menu == "Add Trade":
         side = st.selectbox("Side", ["BUY", "SELL"])
 
         entry = st.number_input("Entry Price", min_value=0.0, step=0.01)
-        exit_price = st.number_input("Exit Price (optional)", min_value=0.0, step=0.01)
+        exit = st.number_input("Exit Price (optional)", min_value=0.0, step=0.01)
 
         qty = st.number_input("Quantity", min_value=1, step=1)
 
+        # strategy = st.text_input("Strategy (optional)")
+        # notes = st.text_area("Notes")
         st.markdown("### 🧠 Trade Context")
 
         strategy = st.selectbox(
@@ -52,10 +40,10 @@ if menu == "Add Trade":
             "Trade Reasoning",
             placeholder="Why did you take this trade? (setup, signal, emotion, news, etc.)"
         )
-
         submit = st.form_submit_button("Submit Trade")
 
         if submit:
+
             if not symbol:
                 st.error("Symbol is required")
             else:
@@ -63,112 +51,119 @@ if menu == "Add Trade":
                     "symbol": symbol,
                     "side": side,
                     "entry_price": entry,
-                    "exit_price": exit_price if exit_price > 0 else None,
+                    "exit_price": exit if exit > 0 else None,
                     "quantity": qty,
                     "strategy": strategy,
                     "notes": notes
                 }
 
-                try:
-                    res = requests.post(f"{API_URL}/trade", json=payload, timeout=10)
+                res = requests.post(f"{API_URL}/trade", json=payload)
 
-                    if res.status_code == 200:
-                        st.success("Trade added successfully!")
-                        st.cache_data.clear()  # 🔥 refresh cache after submit
-                    else:
-                        st.error(res.text)
+                if res.status_code == 200:
+                    st.success("Trade added successfully!")
+                    st.json(res.json())
+                else:
+                    st.error(res.text)
 
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-
-
-# =========================================================
-# 📊 VIEW TRADES
-# =========================================================
+# ------------------------
+# 📊 VIEW TRADES (IMPROVED)
+# ------------------------
 if menu == "View Trades":
-
     st.header("📊 Trades Overview")
 
-    try:
-        data = get_trades()
+    if st.button("🔄 Refresh Trades"):
+        with st.spinner("Loading trades..."):
+            try:
+                res = requests.get(f"{API_URL}/trades", timeout=10)
 
-        if not data:
-            st.info("No trades yet. Start adding trades 🚀")
-            st.stop()
+                if res.status_code == 200:
+                    data = res.json()
 
-        open_trades = [t for t in data if t.get("status") == "OPEN"]
-        closed_trades = [t for t in data if t.get("status") == "CLOSED"]
+                    if not data:
+                        st.info("No trades yet. Start adding trades 🚀")
+                        st.stop()
 
-        # ------------------------
-        # SUMMARY
-        # ------------------------
-        st.markdown("### 📊 Quick Overview")
+                    # ------------------------
+                    # SPLIT DATA
+                    # ------------------------
+                    open_trades = [t for t in data if t.get("status") == "OPEN"]
+                    closed_trades = [t for t in data if t.get("status") == "CLOSED"]
 
-        c1, c2, c3 = st.columns(3)
+                    # ------------------------
+                    # SUMMARY METRICS (IMPORTANT)
+                    # ------------------------
+                    st.markdown("### 📊 Quick Overview")
 
-        with c1:
-            st.metric("Total Trades", len(data))
+                    c1, c2, c3 = st.columns(3)
 
-        with c2:
-            st.metric("Open Positions", len(open_trades))
+                    with c1:
+                        st.metric("Total Trades", len(data))
 
-        with c3:
-            st.metric("Closed Trades", len(closed_trades))
+                    with c2:
+                        st.metric("Open Positions", len(open_trades))
 
-        st.divider()
+                    with c3:
+                        st.metric("Closed Trades", len(closed_trades))
 
-        # ------------------------
-        # OPEN TRADES
-        # ------------------------
-        st.markdown("### 🟡 Open Positions")
+                    st.divider()
 
-        if open_trades:
-            st.dataframe(open_trades, use_container_width=True, hide_index=True)
-        else:
-            st.info("No open positions")
+                    # ------------------------
+                    # 🟡 OPEN POSITIONS
+                    # ------------------------
+                    st.markdown("### 🟡 Open Positions")
 
-        st.divider()
+                    if open_trades:
+                        st.dataframe(open_trades, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("No open positions")
 
-        # ------------------------
-        # CLOSED TRADES
-        # ------------------------
-        st.markdown("### 🟢 Trade History")
+                    st.divider()
 
-        if closed_trades:
-            st.dataframe(closed_trades, use_container_width=True, hide_index=True)
-        else:
-            st.info("No closed trades yet")
+                    # ------------------------
+                    # 🟢 CLOSED TRADES
+                    # ------------------------
+                    st.markdown("### 🟢 Trade History")
 
-    except requests.exceptions.Timeout:
-        st.error("⏳ Server is waking up. Try again in a few seconds.")
+                    if closed_trades:
+                        st.dataframe(closed_trades, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("No closed trades yet")
 
-    except requests.exceptions.ConnectionError:
-        st.error("❌ Backend not reachable. Check API URL.")
+                else:
+                    st.error(f"Failed to load trades (Status: {res.status_code})")
 
-    except Exception as e:
-        st.error(f"Unexpected error: {str(e)}")
+            except requests.exceptions.Timeout:
+                st.error("⏳ Server is waking up. Try again in a few seconds.")
 
+            except requests.exceptions.ConnectionError:
+                st.error("❌ Backend not reachable. Check API URL.")
 
-# =========================================================
-# 📊 DASHBOARD
-# =========================================================
+            except Exception as e:
+                st.error(f"Unexpected error: {str(e)}")
+# 📊 DASHBOARD (PREMIUM FINTECH UI)
+# ------------------------
 if menu == "Dashboard":
 
     st.header("📊 Trading Dashboard")
 
-    try:
-        stats = get_stats()
+    res = requests.get(f"{API_URL}/stats")
 
-        if not stats or stats.get("total_trades", 0) == 0:
+    if res.status_code == 200:
+        stats = res.json()
+
+        # ------------------------
+        # EMPTY STATE
+        # ------------------------
+        if stats["total_trades"] == 0:
             st.info("No trades yet. Start logging to build your performance analytics 📈")
             st.stop()
 
+        # ------------------------
+        # HEADER SUMMARY STRIP
+        # ------------------------
         pnl = stats["total_pnl"]
         win_rate = stats["win_rate"]
 
-        # ------------------------
-        # HEADER STRIP
-        # ------------------------
         colA, colB, colC = st.columns([1, 1, 2])
 
         with colA:
@@ -191,7 +186,7 @@ if menu == "Dashboard":
         st.divider()
 
         # ------------------------
-        # KPIs
+        # KPI CARDS (FINTECH STYLE)
         # ------------------------
         st.markdown("### 📊 Key Performance Metrics")
 
@@ -207,51 +202,60 @@ if menu == "Dashboard":
             st.metric("Losing Trades", stats["losing_trades"])
 
         with k4:
-            avg_pnl = pnl / stats["total_trades"]
+            avg_pnl = pnl / stats["total_trades"] if stats["total_trades"] else 0
             st.metric("Avg PnL / Trade", f"${avg_pnl:.2f}")
 
         st.divider()
 
         # ------------------------
-        # INSIGHTS
+        # PERFORMANCE INSIGHT PANEL
         # ------------------------
         st.markdown("### 🧠 Performance Intelligence")
 
-        if win_rate < 40:
-            st.warning("""
-            ⚠️ Weak Win Rate Detected
-            - Review entry strategy
-            - Avoid emotional trades
-            - Focus on quality setups
-            """)
+        insight_col1, insight_col2 = st.columns([2, 1])
 
-        elif pnl > 0 and win_rate > 55:
-            st.success("""
-            🔥 Strong Trading Edge
-            - Consistent profitability
-            - Good discipline
-            - Scale carefully
-            """)
+        with insight_col1:
 
-        elif pnl > 0:
-            st.info("""
-            👍 Profitable but inconsistent
-            - Improve trade selection
-            - Increase win rate
-            """)
+            if win_rate < 40:
+                st.warning("""
+                ⚠️ Weak Win Rate Detected
 
-        else:
-            st.info("""
-            📉 Early Stage Performance
-            - Focus on capital preservation
-            - Reduce losses first
-            """)
+                - Review entry strategy
+                - Avoid emotional trades
+                - Focus on high-quality setups
+                """)
 
-        st.markdown("#### 🧾 Quick Stats")
+            elif pnl > 0 and win_rate > 55:
+                st.success("""
+                🔥 Strong Trading Edge
 
-        st.write(f"Trades: **{stats['total_trades']}**")
-        st.write(f"Win Rate: **{win_rate:.2f}%**")
-        st.write(f"PnL: **${pnl:.2f}**")
+                - Consistent profitability
+                - Good discipline
+                - Keep scaling position sizing carefully
+                """)
 
-    except Exception as e:
-        st.error(f"Failed to load stats: {str(e)}")
+            elif pnl > 0:
+                st.info("""
+                👍 Profitable but inconsistent
+
+                - Improve trade selection
+                - Focus on win rate improvement
+                """)
+
+            else:
+                st.info("""
+                📉 Early Stage Performance
+
+                - Focus on capital preservation
+                - Reduce losses first
+                """)
+
+        with insight_col2:
+            st.markdown("#### 🧾 Quick Stats")
+
+            st.write(f"Trades: **{stats['total_trades']}**")
+            st.write(f"Win Rate: **{win_rate:.2f}%**")
+            st.write(f"PnL: **${pnl:.2f}**")
+
+    else:
+        st.error("Failed to load stats")
