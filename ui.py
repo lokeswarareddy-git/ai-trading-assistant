@@ -6,6 +6,7 @@ API_URL = "https://ai-trading-assistant-2ji8.onrender.com"
 st.set_page_config(page_title="Trading Journal", layout="wide")
 
 st.title("📈 AI Trading Assistant")
+st.caption("Track trades. Improve discipline. Build consistency.")
 
 menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades", "Dashboard"])
 
@@ -96,10 +97,17 @@ if menu == "Dashboard":
 
     if res.status_code == 200:
         stats = res.json()
+
         # ✅ Handle empty state
         if stats["total_trades"] == 0:
             st.info("No trades yet. Add trades to see analytics.")
             st.stop()
+
+        # ------------------------
+        # 📊 PERFORMANCE OVERVIEW
+        # ------------------------
+        st.markdown("### 📊 Performance Overview")
+        st.divider()
 
         # --- KPI CARDS ---
         col1, col2, col3, col4 = st.columns(4)
@@ -108,7 +116,7 @@ if menu == "Dashboard":
             st.metric("Total Trades", stats["total_trades"])
 
         with col2:
-            st.metric("Win Rate %", f"{stats['win_rate']}%")
+            st.metric("Win Rate %", f"{stats['win_rate']:.2f}%")
 
         with col3:
             st.metric("Winning Trades", stats["winning_trades"])
@@ -116,27 +124,38 @@ if menu == "Dashboard":
         with col4:
             st.metric("Losing Trades", stats["losing_trades"])
 
+        # ------------------------
+        # 💰 PnL SECTION
+        # ------------------------
+        st.markdown("### 💰 Profit & Loss")
         st.divider()
 
-        # --- PnL SECTION ---
         pnl = stats["total_pnl"]
 
-        if pnl >= 0:
-            st.success(f"💰 Total PnL: +{pnl}")
+        if pnl > 0:
+            st.success(f"💰 Total PnL: +${pnl:.2f}")
+        elif pnl < 0:
+            st.error(f"💸 Total PnL: ${pnl:.2f}")
         else:
-            st.error(f"💸 Total PnL: {pnl}")
+            st.info("💰 Total PnL: $0.00")
 
-        # --- SIMPLE INSIGHT ---
-        st.subheader("🧠 Insight")
+        # ------------------------
+        # 🧠 INSIGHT SECTION
+        # ------------------------
+        st.markdown("### 🧠 Insight Engine")
+        st.divider()
 
         if stats["win_rate"] < 40:
             st.warning("⚠️ Low win rate — review your strategy discipline")
 
+        elif pnl > 0 and stats["win_rate"] > 50:
+            st.success("🔥 Strong performance — you are trading with an edge")
+
         elif pnl > 0:
-            st.success("🔥 You are profitable — keep scaling your edge")
+            st.info("👍 Profitable, but consistency can improve")
 
         else:
-            st.info("📉 Focus on reducing losses first")
+            st.info("📉 Focus on reducing losses and improving discipline")
 
     else:
         st.error("Failed to load stats")
