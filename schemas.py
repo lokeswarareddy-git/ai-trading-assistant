@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-
+from typing import Optional
 
 
 class TradeCreate(BaseModel):
@@ -8,10 +8,11 @@ class TradeCreate(BaseModel):
     side: str
     strategy: str
     entry_price: float
-    exit_price: float
+    exit_price: Optional[float] = None
     quantity: int
-    strategy: str
-    notes: str
+    strategy: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[str] = "OPEN"
 
 
 class TradeOut(BaseModel):
@@ -19,11 +20,12 @@ class TradeOut(BaseModel):
     symbol: str
     side: str
     entry_price: float
-    exit_price: float
+    exit_price: Optional[float] = None
     quantity: int
-    strategy: str | None
-    notes: str | None
-    pnl: float | None   # 
+    strategy: str
+    notes: str
+    pnl: float  # 
+    status: str
     timestamp: datetime
     class Config:
         from_attributes = True  # for SQLAlchemy
