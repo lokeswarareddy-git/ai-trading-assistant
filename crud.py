@@ -6,8 +6,7 @@ import schemas
 def calculate_pnl(side, entry_price, exit_price, quantity):
 
     if exit_price is None:
-        status = "OPEN"
-        pnl = 0
+        return 0
     else:
         status = "CLOSED"
         if side == "BUY":
@@ -15,8 +14,6 @@ def calculate_pnl(side, entry_price, exit_price, quantity):
 
         elif side == "SELL":
             return (entry_price - exit_price) * quantity
-
-    return pnl
 
 def create_trade(db: Session, trade: schemas.TradeCreate):
 
@@ -39,6 +36,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
         trade.exit_price,
         trade.quantity
     )
+    status="CLOSED" if trade.exit_price is not None else "OPEN"
     )
     #db_trade = models.Trade(**trade.dict())
 
