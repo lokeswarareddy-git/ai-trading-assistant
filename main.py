@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from typing import List
 import models, schemas, crud
 from database import SessionLocal, engine
@@ -31,7 +31,7 @@ def get_db():
     finally:
         db.close()
 
-@app.post("/trade")
+@app.post("/trade", response_model=schemas.TradeOut)
 def add_trade(trade: schemas.TradeCreate, db: Session = Depends(get_db)):
     return crud.create_trade(db, trade)
 
@@ -45,3 +45,26 @@ def reset_trades():
     with engine.begin() as conn:
         conn.execute(text("DROP TABLE IF EXISTS trades"))
     return {"message": "trades table dropped"}
+
+
+@app.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+
+    total_trades = db.query(models.Trade).count()
+
+    total_pnl = db.query(func.sum(models.Trade.pnl)).scalar() or 0
+
+    winning_trades = db.query(models.Trade).filter(models.Trade.pnl > 0).count()
+
+    losing_trades = db.query(models.Trade).filter(models.Trade.pnl <= 0).count()
+
+    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+
+    return {
+        "total_trades": total_trades,
+        "winning_trades": winning_trades,
+        "losing_trades": losing_trades,
+        "win_rate": round(win_rate, 2),
+        "total_pnl": round(total_pnl, 2)
+    }
+
