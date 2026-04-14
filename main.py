@@ -69,26 +69,33 @@ def close_trade(trade_id: int, exit_price: float, db: Session = Depends(get_db))
 @app.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
 
-    total_trades = db.query(models.Trade).filter(models.Trade.status == "CLOSED").all()
+    trades = db.query(models.Trade).all()
 
-    total_pnl = db.query(func.sum(models.Trade.pnl)).scalar() or 0
+    total_trades = len(trades)
 
-    winning_trades = db.query(models.Trade).filter(models.Trade.pnl > 0).count()
+    if total_trades == 0:
+        return {
+            "total_trades": 0,
+            "winning_trades": 0,
+            "losing_trades": 0,
+            "total_pnl": 0,
+            "win_rate": 0
+        }
 
-    losing_trades = db.query(models.Trade).filter(models.Trade.pnl <= 0).count()
+    closed_trades = [t for t in trades if getattr(t, "status", "CLOSED") == "CLOSED"]
 
-    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+    total_pnl = sum([(t.pnl or 0) for t in closed_trades])
 
-    total_open = db.query(models.Trade).filter(models.Trade.status == "OPEN").count()
-    total_closed = db.query(models.Trade).filter(models.Trade.status == "CLOSED").count()
+    winning_trades = len([t for t in closed_trades if (t.pnl or 0) > 0])
+    losing_trades = len([t for t in closed_trades if (t.pnl or 0) <= 0])
+
+    win_rate = (winning_trades / total_trades * 100) if total_trades else 0
 
     return {
         "total_trades": total_trades,
         "winning_trades": winning_trades,
         "losing_trades": losing_trades,
-        "win_rate": round(win_rate, 2),
         "total_pnl": round(total_pnl, 2),
-        "total_open": total_open,
-        "total_closed": total_closed
+        "win_rate": round(win_rate, 2)
     }
 
