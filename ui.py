@@ -2,18 +2,6 @@ import streamlit as st
 import requests
 
 API_URL = "https://ai-trading-assistant-2ji8.onrender.com"
-st.cache_data.clear()
-def safe_get(url, fallback):
-    try:
-        res = requests.get(url, timeout=10)
-
-        if res.status_code == 200:
-            return res.json()
-
-        return fallback
-
-    except:
-        return fallback
 
 st.set_page_config(page_title="Trading Journal", layout="wide")
 
@@ -22,6 +10,16 @@ st.caption("Track trades. Improve discipline. Build consistency.")
 
 menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades", "Dashboard"])
 
+
+@st.cache_data(ttl=10)
+def get_trades():
+    return requests.get(f"{API_URL}/trades", timeout=10).json()
+
+
+@st.cache_data(ttl=10)
+def get_stats():
+    return requests.get(f"{API_URL}/stats", timeout=10).json()
+    
 # ------------------------
 # ➕ ADD TRADE
 # ------------------------
@@ -83,88 +81,75 @@ if menu == "Add Trade":
 if menu == "View Trades":
     st.header("📊 Trades Overview")
 
-    # ------------------------
-    # SAFE SINGLE FETCH (prevents 429 spam)
-    # ------------------------
-    @st.cache_data(ttl=10)
-    def get_trades():
-        try:
-            res = requests.get(f"{API_URL}/trades", timeout=10)
-
-            if res.status_code == 200:
-                return res.json()
-
-            return []
-
-        except:
-            return []
-
     if st.button("🔄 Refresh Trades"):
         with st.spinner("Loading trades..."):
+            try:
+                res = requests.get(f"{API_URL}/trades", timeout=10)
 
-            data = get_trades()
+                if res.status_code == 200:
+                    data = res.json()
 
-            # ------------------------
-            # EMPTY STATE
-            # ------------------------
-            if not data:
-                st.info("No trades yet. Start adding trades 🚀")
-                st.stop()
+                    if not data:
+                        st.info("No trades yet. Start adding trades 🚀")
+                        st.stop()
 
-            # ------------------------
-            # SPLIT DATA
-            # ------------------------
-            open_trades = [t for t in data if t.get("status") == "OPEN"]
-            closed_trades = [t for t in data if t.get("status") == "CLOSED"]
+                    # ------------------------
+                    # SPLIT DATA
+                    # ------------------------
+                    open_trades = [t for t in data if t.get("status") == "OPEN"]
+                    closed_trades = [t for t in data if t.get("status") == "CLOSED"]
 
-            # ------------------------
-            # SUMMARY METRICS
-            # ------------------------
-            st.markdown("### 📊 Quick Overview")
+                    # ------------------------
+                    # SUMMARY METRICS (IMPORTANT)
+                    # ------------------------
+                    st.markdown("### 📊 Quick Overview")
 
-            c1, c2, c3 = st.columns(3)
+                    c1, c2, c3 = st.columns(3)
 
-            with c1:
-                st.metric("Total Trades", len(data))
+                    with c1:
+                        st.metric("Total Trades", len(data))
 
-            with c2:
-                st.metric("Open Positions", len(open_trades))
+                    with c2:
+                        st.metric("Open Positions", len(open_trades))
 
-            with c3:
-                st.metric("Closed Trades", len(closed_trades))
+                    with c3:
+                        st.metric("Closed Trades", len(closed_trades))
 
-            st.divider()
+                    st.divider()
 
-            # ------------------------
-            # 🟡 OPEN POSITIONS
-            # ------------------------
-            st.markdown("### 🟡 Open Positions")
+                    # ------------------------
+                    # 🟡 OPEN POSITIONS
+                    # ------------------------
+                    st.markdown("### 🟡 Open Positions")
 
-            if open_trades:
-                for t in open_trades:
-                    t["status"] = "🟡 OPEN"
+                    if open_trades:
+                        st.dataframe(open_trades, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("No open positions")
 
-                st.dataframe(open_trades, use_container_width=True, hide_index=True)
-            else:
-                st.info("No open positions")
+                    st.divider()
 
-            st.divider()
+                    # ------------------------
+                    # 🟢 CLOSED TRADES
+                    # ------------------------
+                    st.markdown("### 🟢 Trade History")
 
-            # ------------------------
-            # 🟢 CLOSED TRADES
-            # ------------------------
-            st.markdown("### 🟢 Trade History")
+                    if closed_trades:
+                        st.dataframe(closed_trades, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("No closed trades yet")
 
-            if closed_trades:
-                for t in closed_trades:
-                    t["status"] = "🟢 CLOSED"
+                else:
+                    st.error(f"Failed to load trades (Status: {res.status_code})")
 
-                st.dataframe(closed_trades, use_container_width=True, hide_index=True)
-            else:
-                st.info("No closed trades yet")
+            except requests.exceptions.Timeout:
+                st.error("⏳ Server is waking up. Try again in a few seconds.")
 
-    else:
-        st.info("Click 'Refresh Trades' to load data")
+            except requests.exceptions.ConnectionError:
+                st.error("❌ Backend not reachable. Check API URL.")
+
+            except Exception as e:
+                st.error(f"Unexpected error: {str(e)}")
 # 📊 DASHBOARD (PREMIUM FINTECH UI)
 # ------------------------
 if menu == "Dashboard":
