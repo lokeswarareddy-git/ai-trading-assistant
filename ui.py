@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 API_URL = "https://ai-trading-assistant-2ji8.onrender.com"
-
+st.cache_data.clear()
 def safe_get(url, fallback):
     try:
         res = requests.get(url, timeout=10)
