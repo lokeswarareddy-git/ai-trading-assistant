@@ -23,7 +23,7 @@ if menu == "Add Trade":
         side = st.selectbox("Side", ["BUY", "SELL"])
 
         entry = st.number_input("Entry Price", min_value=0.0, step=0.01)
-        exit = st.number_input("Exit Price", min_value=0.0, step=0.01)
+        exit = st.number_input("Exit Price (optional)", min_value=0.0, step=0.01)
 
         qty = st.number_input("Quantity", min_value=1, step=1)
 
@@ -51,7 +51,7 @@ if menu == "Add Trade":
                     "symbol": symbol,
                     "side": side,
                     "entry_price": entry,
-                    "exit_price": exit,
+                    "exit_price": exit if exit > 0 else None,
                     "quantity": qty,
                     "strategy": strategy,
                     "notes": notes
@@ -66,12 +66,12 @@ if menu == "Add Trade":
                     st.error(res.text)
 
 # ------------------------
-# 📊 VIEW TRADES
+# 📊 VIEW TRADES (IMPROVED)
 # ------------------------
 if menu == "View Trades":
-    st.header("Trades")
+    st.header("📊 Trades Overview")
 
-    if st.button("Load Trades"):
+    if st.button("🔄 Refresh Trades"):
         with st.spinner("Loading trades..."):
             try:
                 res = requests.get(f"{API_URL}/trades", timeout=10)
@@ -79,24 +79,67 @@ if menu == "View Trades":
                 if res.status_code == 200:
                     data = res.json()
 
-                    if data:
-                        st.dataframe(data)
-                        st.write(f"Total Trades: {len(data)}")
+                    if not data:
+                        st.info("No trades yet. Start adding trades 🚀")
+                        st.stop()
+
+                    # ------------------------
+                    # SPLIT DATA
+                    # ------------------------
+                    open_trades = [t for t in data if t.get("status") == "OPEN"]
+                    closed_trades = [t for t in data if t.get("status") == "CLOSED"]
+
+                    # ------------------------
+                    # SUMMARY METRICS (IMPORTANT)
+                    # ------------------------
+                    st.markdown("### 📊 Quick Overview")
+
+                    c1, c2, c3 = st.columns(3)
+
+                    with c1:
+                        st.metric("Total Trades", len(data))
+
+                    with c2:
+                        st.metric("Open Positions", len(open_trades))
+
+                    with c3:
+                        st.metric("Closed Trades", len(closed_trades))
+
+                    st.divider()
+
+                    # ------------------------
+                    # 🟡 OPEN POSITIONS
+                    # ------------------------
+                    st.markdown("### 🟡 Open Positions")
+
+                    if open_trades:
+                        st.dataframe(open_trades, use_container_width=True, hide_index=True)
                     else:
-                        st.info("No trades found")
+                        st.info("No open positions")
+
+                    st.divider()
+
+                    # ------------------------
+                    # 🟢 CLOSED TRADES
+                    # ------------------------
+                    st.markdown("### 🟢 Trade History")
+
+                    if closed_trades:
+                        st.dataframe(closed_trades, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("No closed trades yet")
 
                 else:
                     st.error(f"Failed to load trades (Status: {res.status_code})")
 
             except requests.exceptions.Timeout:
-                st.error("Request timed out. Backend may be waking up (Render free tier).")
+                st.error("⏳ Server is waking up. Try again in a few seconds.")
 
             except requests.exceptions.ConnectionError:
-                st.error("Unable to connect to backend. Check API URL.")
+                st.error("❌ Backend not reachable. Check API URL.")
 
             except Exception as e:
                 st.error(f"Unexpected error: {str(e)}")
-# ------------------------
 # 📊 DASHBOARD (PREMIUM FINTECH UI)
 # ------------------------
 if menu == "Dashboard":

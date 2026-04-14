@@ -15,4 +15,5 @@ class Trade(Base):
     strategy = Column(String, nullable=True)
     notes = Column(String, nullable=True)
     pnl = Column(Float)
+    status = Column(String, default="OPEN")  # OPEN / CLOSED
 

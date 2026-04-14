@@ -47,10 +47,29 @@ def reset_trades():
     return {"message": "trades table dropped"}
 
 
+@app.put("/trade/{trade_id}/close")
+def close_trade(trade_id: int, exit_price: float, db: Session = Depends(get_db)):
+    trade = db.query(models.Trade).filter(models.Trade.id == trade_id).first()
+
+    if not trade:
+        return {"error": "Trade not found"}
+
+    trade.exit_price = exit_price
+    trade.status = "CLOSED"
+
+    if trade.side == "BUY":
+        trade.pnl = (exit_price - trade.entry_price) * trade.quantity
+    else:
+        trade.pnl = (trade.entry_price - exit_price) * trade.quantity
+
+    db.commit()
+    db.refresh(trade)
+    return trade
+
 @app.get("/stats")
 def get_stats(db: Session = Depends(get_db)):
 
-    total_trades = db.query(models.Trade).count()
+    total_trades = db.query(models.Trade).filter(models.Trade.status == "CLOSED").all()
 
     total_pnl = db.query(func.sum(models.Trade.pnl)).scalar() or 0
 
