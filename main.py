@@ -79,11 +79,16 @@ def get_stats(db: Session = Depends(get_db)):
 
     win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
 
+    total_open = db.query(models.Trade).filter(models.Trade.status == "OPEN").count()
+    total_closed = db.query(models.Trade).filter(models.Trade.status == "CLOSED").count()
+
     return {
         "total_trades": total_trades,
         "winning_trades": winning_trades,
         "losing_trades": losing_trades,
         "win_rate": round(win_rate, 2),
-        "total_pnl": round(total_pnl, 2)
+        "total_pnl": round(total_pnl, 2),
+        "total_open": total_open,
+        "total_closed": total_closed
     }
 
