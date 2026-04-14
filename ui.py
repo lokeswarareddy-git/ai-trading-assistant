@@ -10,16 +10,6 @@ st.caption("Track trades. Improve discipline. Build consistency.")
 
 menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades", "Dashboard"])
 
-
-@st.cache_data(ttl=10)
-def get_trades():
-    return requests.get(f"{API_URL}/trades", timeout=10).json()
-
-
-@st.cache_data(ttl=10)
-def get_stats():
-    return requests.get(f"{API_URL}/stats", timeout=10).json()
-    
 # ------------------------
 # ➕ ADD TRADE
 # ------------------------
