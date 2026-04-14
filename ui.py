@@ -16,19 +16,31 @@ if menu == "Add Trade":
 
     st.header("Add Trade")
 
-    with st.form("trade_form"):   # ✅ IMPORTANT FIX
+    # ✅ FORM MUST WRAP EVERYTHING
+    with st.form("trade_form"):
+
         side = st.selectbox("Side", ["BUY", "SELL"])
         submit = st.form_submit_button("Submit Trade")
 
+        # ⚠️ Inputs must be OUTSIDE submit condition
+        entry = st.number_input("Entry Price", value=0.0)
+        exit = st.number_input("Exit Price", value=0.0)
+        qty = st.number_input("Quantity", value=1, step=1)
+        notes = st.text_area("Notes")
+
         if submit:
             payload = {
-                "side": side
+                "side": side,
+                "entry_price": entry,
+                "exit_price": exit,
+                "quantity": qty,
+                "notes": notes
             }
 
             res = requests.post(f"{API_URL}/trade", json=payload)
 
             if res.status_code == 200:
-                st.success("Trade added!")
+                st.success("Trade added successfully!")
                 st.json(res.json())
             else:
                 st.error(res.text)
