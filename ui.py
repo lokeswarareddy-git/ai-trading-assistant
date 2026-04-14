@@ -127,7 +127,7 @@ elif page == "Trades":
                 return "color: red"
             return ""
 
-        st.dataframe(df.style.applymap(color_pnl, subset=["pnl"]),
+        st.dataframe(df.style.map(color_pnl, subset=["pnl"]),
                      use_container_width=True)
     else:
         st.info("No trades found")
