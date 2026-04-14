@@ -87,75 +87,122 @@ if menu == "View Trades":
             except Exception as e:
                 st.error(f"Unexpected error: {str(e)}")
 # ------------------------
-# 📊 DASHBOARD (STATS)
+# 📊 DASHBOARD (PREMIUM FINTECH UI)
 # ------------------------
 if menu == "Dashboard":
 
-    st.header("📊 Trading Performance Dashboard")
+    st.header("📊 Trading Dashboard")
 
     res = requests.get(f"{API_URL}/stats")
 
     if res.status_code == 200:
         stats = res.json()
 
-        # ✅ Handle empty state
+        # ------------------------
+        # EMPTY STATE
+        # ------------------------
         if stats["total_trades"] == 0:
-            st.info("No trades yet. Add trades to see analytics.")
+            st.info("No trades yet. Start logging to build your performance analytics 📈")
             st.stop()
 
         # ------------------------
-        # 📊 PERFORMANCE OVERVIEW
+        # HEADER SUMMARY STRIP
         # ------------------------
-        st.markdown("### 📊 Performance Overview")
+        pnl = stats["total_pnl"]
+        win_rate = stats["win_rate"]
+
+        colA, colB, colC = st.columns([1, 1, 2])
+
+        with colA:
+            if pnl >= 0:
+                st.success(f"💰 PnL: +${pnl:.2f}")
+            else:
+                st.error(f"💰 PnL: ${pnl:.2f}")
+
+        with colB:
+            st.metric("Win Rate", f"{win_rate:.2f}%")
+
+        with colC:
+            if win_rate > 50 and pnl > 0:
+                st.success("🟢 Strong Edge Detected")
+            elif win_rate < 40:
+                st.warning("🟡 Performance Needs Review")
+            else:
+                st.info("🔵 Stable / Neutral Performance")
+
         st.divider()
 
-        # --- KPI CARDS ---
-        col1, col2, col3, col4 = st.columns(4)
+        # ------------------------
+        # KPI CARDS (FINTECH STYLE)
+        # ------------------------
+        st.markdown("### 📊 Key Performance Metrics")
 
-        with col1:
+        k1, k2, k3, k4 = st.columns(4)
+
+        with k1:
             st.metric("Total Trades", stats["total_trades"])
 
-        with col2:
-            st.metric("Win Rate %", f"{stats['win_rate']:.2f}%")
-
-        with col3:
+        with k2:
             st.metric("Winning Trades", stats["winning_trades"])
 
-        with col4:
+        with k3:
             st.metric("Losing Trades", stats["losing_trades"])
 
-        # ------------------------
-        # 💰 PnL SECTION
-        # ------------------------
-        st.markdown("### 💰 Profit & Loss")
+        with k4:
+            avg_pnl = pnl / stats["total_trades"] if stats["total_trades"] else 0
+            st.metric("Avg PnL / Trade", f"${avg_pnl:.2f}")
+
         st.divider()
 
-        pnl = stats["total_pnl"]
-
-        if pnl > 0:
-            st.success(f"💰 Total PnL: +${pnl:.2f}")
-        elif pnl < 0:
-            st.error(f"💸 Total PnL: ${pnl:.2f}")
-        else:
-            st.info("💰 Total PnL: $0.00")
-
         # ------------------------
-        # 🧠 INSIGHT SECTION
+        # PERFORMANCE INSIGHT PANEL
         # ------------------------
-        st.markdown("### 🧠 Insight Engine")
-        st.divider()
+        st.markdown("### 🧠 Performance Intelligence")
 
-        if stats["win_rate"] < 40:
-            st.warning("⚠️ Low win rate — review your strategy discipline")
+        insight_col1, insight_col2 = st.columns([2, 1])
 
-        elif pnl > 0 and stats["win_rate"] > 50:
-            st.success("🔥 Strong performance — you are trading with an edge")
+        with insight_col1:
 
-        elif pnl > 0:
-            st.info("👍 Profitable, but consistency can improve")
+            if win_rate < 40:
+                st.warning("""
+                ⚠️ Weak Win Rate Detected
 
-        else:
-            st.info("📉 Focus on reducing losses and improving discipline")
+                - Review entry strategy
+                - Avoid emotional trades
+                - Focus on high-quality setups
+                """)
+
+            elif pnl > 0 and win_rate > 55:
+                st.success("""
+                🔥 Strong Trading Edge
+
+                - Consistent profitability
+                - Good discipline
+                - Keep scaling position sizing carefully
+                """)
+
+            elif pnl > 0:
+                st.info("""
+                👍 Profitable but inconsistent
+
+                - Improve trade selection
+                - Focus on win rate improvement
+                """)
+
+            else:
+                st.info("""
+                📉 Early Stage Performance
+
+                - Focus on capital preservation
+                - Reduce losses first
+                """)
+
+        with insight_col2:
+            st.markdown("#### 🧾 Quick Stats")
+
+            st.write(f"Trades: **{stats['total_trades']}**")
+            st.write(f"Win Rate: **{win_rate:.2f}%**")
+            st.write(f"PnL: **${pnl:.2f}**")
 
     else:
         st.error("Failed to load stats")
