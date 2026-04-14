@@ -35,7 +35,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
         trade.entry_price,
         trade.exit_price,
         trade.quantity
-    )
+    ),
     status="CLOSED" if trade.exit_price is not None else "OPEN"
     )
     #db_trade = models.Trade(**trade.dict())
