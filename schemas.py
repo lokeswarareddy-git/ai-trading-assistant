@@ -23,7 +23,7 @@ class TradeOut(BaseModel):
     quantity: int
     strategy: str | None
     notes: str | None
-    pnl: float | None   # 👈 MUST ADD THIS
+    pnl: float | None   # 
     timestamp: datetime
     class Config:
         from_attributes = True  # for SQLAlchemy

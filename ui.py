@@ -27,9 +27,19 @@ if menu == "Add Trade":
 
         qty = st.number_input("Quantity", min_value=1, step=1)
 
-        strategy = st.text_input("Strategy (optional)")
-        notes = st.text_area("Notes")
+        # strategy = st.text_input("Strategy (optional)")
+        # notes = st.text_area("Notes")
+        st.markdown("### 🧠 Trade Context")
 
+        strategy = st.selectbox(
+            "Strategy Tag",
+            ["Scalping", "Day Trade", "Swing", "Breakout", "Reversal", "Other"]
+        )
+
+        notes = st.text_area(
+            "Trade Reasoning",
+            placeholder="Why did you take this trade? (setup, signal, emotion, news, etc.)"
+        )
         submit = st.form_submit_button("Submit Trade")
 
         if submit:
