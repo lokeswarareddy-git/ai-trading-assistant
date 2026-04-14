@@ -9,16 +9,17 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
     pnl = (trade.entry_price - trade.exit_price)* trade.quantity * -1
 
     # 2. Create the Database Model instance
-    # db_trade = models.Trade(
-    #     symbol=trade.symbol,
-    #     entry_price=trade.entry_price,
-    #     exit_price=trade.exit_price,
-    #     quantity=trade.quantity,
-    #     strategy=trade.strategy,
-    #     notes=trade.notes,
-    #     pnl=pnl
-    # )
-    db_trade = models.Trade(**trade.dict())
+    db_trade = models.Trade(
+        symbol=trade.symbol,
+        side=trade.side,
+        entry_price=trade.entry_price,
+        exit_price=trade.exit_price,
+        quantity=trade.quantity,
+        strategy=trade.strategy,
+        notes=trade.notes,
+        pnl=pnl
+    )
+    #db_trade = models.Trade(**trade.dict())
 
     # 3. Use the Session to save
     db.add(db_trade)

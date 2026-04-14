@@ -14,8 +14,16 @@ class TradeCreate(BaseModel):
     notes: str
 
 
-class TradeOut(TradeCreate):
+class TradeOut(BaseModel):
     id: int
+    symbol: str
+    side: str
+    entry_price: float
+    exit_price: float
+    quantity: int
+    strategy: str | None
+    notes: str | None
+    pnl: float | None   # 👈 MUST ADD THIS
     timestamp: datetime
     class Config:
         from_attributes = True  # for SQLAlchemy
