@@ -2,6 +2,20 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 
+
+def calculate_pnl(side, entry_price, exit_price, quantity):
+
+    if exit_price is None:
+        return None
+
+    if side == "BUY":
+        return (exit_price - entry_price) * quantity
+
+    elif side == "SELL":
+        return (entry_price - exit_price) * quantity
+
+    return None
+
 def create_trade(db: Session, trade: schemas.TradeCreate):
 
     # 1. Calculate PnL
@@ -17,7 +31,12 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
         quantity=trade.quantity,
         strategy=trade.strategy,
         notes=trade.notes,
-        pnl=pnl
+        pnl = calculate_pnl(
+        trade.side,
+        trade.entry_price,
+        trade.exit_price,
+        trade.quantity
+    )
     )
     #db_trade = models.Trade(**trade.dict())
 
