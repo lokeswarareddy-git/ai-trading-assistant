@@ -7,7 +7,7 @@ st.set_page_config(page_title="Trading Journal", layout="wide")
 
 st.title("📈 AI Trading Assistant")
 
-menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades"])
+menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades", "Dashboard"])
 
 # ------------------------
 # ➕ ADD TRADE
@@ -67,3 +67,55 @@ if menu == "View Trades":
             st.dataframe(res.json())
         else:
             st.error("Failed to load trades")
+
+# ------------------------
+# 📊 DASHBOARD (STATS)
+# ------------------------
+if menu == "Dashboard":
+
+    st.header("📊 Trading Performance Dashboard")
+
+    res = requests.get(f"{API_URL}/stats")
+
+    if res.status_code == 200:
+        stats = res.json()
+
+        # --- KPI CARDS ---
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("Total Trades", stats["total_trades"])
+
+        with col2:
+            st.metric("Win Rate %", f"{stats['win_rate']}%")
+
+        with col3:
+            st.metric("Winning Trades", stats["winning_trades"])
+
+        with col4:
+            st.metric("Losing Trades", stats["losing_trades"])
+
+        st.divider()
+
+        # --- PnL SECTION ---
+        pnl = stats["total_pnl"]
+
+        if pnl >= 0:
+            st.success(f"💰 Total PnL: +{pnl}")
+        else:
+            st.error(f"💸 Total PnL: {pnl}")
+
+        # --- SIMPLE INSIGHT ---
+        st.subheader("🧠 Insight")
+
+        if stats["win_rate"] < 40:
+            st.warning("⚠️ Low win rate — review your strategy discipline")
+
+        elif pnl > 0:
+            st.success("🔥 You are profitable — keep scaling your edge")
+
+        else:
+            st.info("📉 Focus on reducing losses first")
+
+    else:
+        st.error("Failed to load stats")
