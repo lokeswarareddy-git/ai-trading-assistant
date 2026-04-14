@@ -99,8 +99,6 @@ if page == "Dashboard":
         col2.metric("Total PnL", round(total_pnl, 2))
         col3.metric("Win Rate %", round(win_rate, 2))
 
-        st.subheader("📈 PnL Chart")
-        st.line_chart(df["pnl"])
 
     else:
         st.info("No trades yet")
