@@ -10,40 +10,49 @@ st.title("📈 AI Trading Assistant")
 menu = st.sidebar.selectbox("Menu", ["Add Trade", "View Trades"])
 
 # ------------------------
-# ➕ ADD TRADE (FORM ALWAYS VISIBLE WHEN SELECTED)
+# ➕ ADD TRADE
 # ------------------------
 if menu == "Add Trade":
 
     st.header("Add Trade")
 
-    # ✅ FORM MUST WRAP EVERYTHING
     with st.form("trade_form"):
 
+        symbol = st.text_input("Symbol (e.g. AAPL)")
         side = st.selectbox("Side", ["BUY", "SELL"])
-        submit = st.form_submit_button("Submit Trade")
 
-        # ⚠️ Inputs must be OUTSIDE submit condition
-        entry = st.number_input("Entry Price", value=0.0)
-        exit = st.number_input("Exit Price", value=0.0)
-        qty = st.number_input("Quantity", value=1, step=1)
+        entry = st.number_input("Entry Price", min_value=0.0, step=0.01)
+        exit = st.number_input("Exit Price", min_value=0.0, step=0.01)
+
+        qty = st.number_input("Quantity", min_value=1, step=1)
+
+        strategy = st.text_input("Strategy (optional)")
         notes = st.text_area("Notes")
 
+        submit = st.form_submit_button("Submit Trade")
+
         if submit:
-            payload = {
-                "side": side,
-                "entry_price": entry,
-                "exit_price": exit,
-                "quantity": qty,
-                "notes": notes
-            }
 
-            res = requests.post(f"{API_URL}/trade", json=payload)
-
-            if res.status_code == 200:
-                st.success("Trade added successfully!")
-                st.json(res.json())
+            if not symbol:
+                st.error("Symbol is required")
             else:
-                st.error(res.text)
+                payload = {
+                    "symbol": symbol,
+                    "side": side,
+                    "entry_price": entry,
+                    "exit_price": exit,
+                    "quantity": qty,
+                    "strategy": strategy,
+                    "notes": notes
+                }
+
+                res = requests.post(f"{API_URL}/trade", json=payload)
+
+                if res.status_code == 200:
+                    st.success("Trade added successfully!")
+                    st.json(res.json())
+                else:
+                    st.error(res.text)
 
 # ------------------------
 # 📊 VIEW TRADES
