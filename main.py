@@ -34,8 +34,13 @@ def get_db():
 recent_requests = {}
 @app.post("/trade", response_model=schemas.TradeOut)
 def add_trade(
+<<<<<<< HEAD
     trade: schemas.TradeCreate, 
     request: Request,
+=======
+    trade: schemas.TradeCreate,
+    request: Request, #adding to fix host issue
+>>>>>>> dev
     db: Session = Depends(get_db)):
     ip = request.client.host
     now = time.time()
@@ -110,3 +115,29 @@ def get_stats(db: Session = Depends(get_db)):
         "win_rate": round(win_rate, 2)
     }
 
+@app.put("/trade/{trade_id}")
+def edit_trade(
+    trade_id: int,
+    updates: schemas.TradeUpdate,
+    db: Session = Depends(get_db)
+):
+    result = crud.update_trade(db, trade_id, updates)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Trade not found")
+
+    return result
+
+
+@app.post("/trade/{trade_id}/close")
+def close_trade_endpoint(
+    trade_id: int,
+    payload: schemas.CloseTrade,
+    db: Session = Depends(get_db)
+):
+    result = crud.close_trade(db, trade_id, payload.exit_price)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Trade not found")
+
+    return result

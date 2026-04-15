@@ -145,14 +145,24 @@ if menu == "Add Trade":
             st.error(f"Unexpected error: {str(e)}")
 
 # ------------------------
-# 📊 VIEW TRADES (CACHED + IMPROVED)
+# 📊 VIEW TRADES (CLEAN SAAS STYLE + UX MESSAGES)
 # ------------------------
 if menu == "View Trades":
 
     st.header("📊 Trades Overview")
 
     # ------------------------
-    # LOAD DATA (WITH CACHE)
+    # SESSION MESSAGE (TOAST STYLE)
+    # ------------------------
+    if "toast" not in st.session_state:
+        st.session_state.toast = None
+
+    if st.session_state.toast:
+        st.success(st.session_state.toast)
+        st.session_state.toast = None
+
+    # ------------------------
+    # LOAD DATA
     # ------------------------
     data = get_cached_data(
         key="trades",
@@ -161,19 +171,12 @@ if menu == "View Trades":
     )
 
     # ------------------------
-    # HANDLE LOADING STATE
+    # LOADING STATE
     # ------------------------
     if data is None:
         st.warning("⏳ Loading trades...")
         st.stop()
 
-    if not data:
-        st.info("No trades yet. Start adding trades 🚀")
-        st.stop()
-
-    # ------------------------
-    # EMPTY STATE
-    # ------------------------
     if not data:
         st.info("No trades yet. Start adding trades 🚀")
         st.stop()
@@ -185,7 +188,7 @@ if menu == "View Trades":
     closed_trades = [t for t in data if t.get("status") == "CLOSED"]
 
     # ------------------------
-    # SUMMARY SECTION
+    # SUMMARY
     # ------------------------
     st.markdown("### 📊 Quick Overview")
 
@@ -202,37 +205,129 @@ if menu == "View Trades":
 
     st.divider()
 
-    # ------------------------
-    # 🟡 OPEN POSITIONS
-    # ------------------------
+    # =========================================================
+    # 🟡 OPEN TRADES (TABLE + EDIT + CLOSE)
+    # =========================================================
     st.markdown("### 🟡 Open Positions")
 
     if open_trades:
+
         st.dataframe(
             open_trades,
             use_container_width=True,
             hide_index=True
         )
+
+        st.divider()
+
+        trade_ids = [t["id"] for t in open_trades]
+
+        selected_id = st.selectbox("Select Trade ID to Edit / Close", trade_ids)
+
+        selected_trade = next(
+            (t for t in open_trades if t["id"] == selected_id),
+            None
+        )
+
+        if selected_trade:
+
+            st.markdown("### ✏️ Edit / Close Trade")
+
+            new_notes = st.text_area(
+                "Notes",
+                value=selected_trade.get("notes") or "",
+                key=f"notes_{selected_id}"
+            )
+
+            new_strategy = st.text_input(
+                "Strategy",
+                value=selected_trade.get("strategy") or "",
+                key=f"strategy_{selected_id}"
+            )
+
+            new_entry = st.number_input(
+                "Entry Price",
+                value=float(selected_trade.get("entry_price") or 0.0),
+                key=f"entry_{selected_id}"
+            )
+
+            new_qty = st.number_input(
+                "Quantity",
+                value=int(selected_trade.get("quantity") or 1),
+                key=f"qty_{selected_id}"
+            )
+
+            # ------------------------
+            # ✏️ UPDATE TRADE
+            # ------------------------
+            if st.button("✏️ Update Trade", key=f"update_{selected_id}"):
+
+                with st.spinner("Updating trade..."):
+
+                    res = requests.put(
+                        f"{API_URL}/trade/{selected_id}",
+                        json={
+                            "notes": new_notes,
+                            "strategy": new_strategy,
+                            "entry_price": new_entry,
+                            "quantity": new_qty
+                        }
+                    )
+
+                if res.status_code == 200:
+                    st.session_state.toast = "✏️ Trade updated successfully"
+                    st.rerun()
+                else:
+                    st.error(res.text)
+
+            st.divider()
+
+            # ------------------------
+            # 🔒 CLOSE TRADE
+            # ------------------------
+            st.markdown("### 🔒 Close Trade")
+
+            exit_price = st.number_input(
+                "Exit Price",
+                value=0.0,
+                key=f"exit_{selected_id}"
+            )
+
+            if st.button("🔒 Close Trade", key=f"close_{selected_id}"):
+
+                with st.spinner("Closing trade..."):
+
+                    res = requests.post(
+                        f"{API_URL}/trade/{selected_id}/close",
+                        json={"exit_price": exit_price}
+                    )
+
+                if res.status_code == 200:
+                    st.session_state.toast = "🔒 Trade closed successfully"
+                    st.rerun()
+                else:
+                    st.error(res.text)
+
     else:
-        st.info("No open positions")
+        st.info("No open positions 🚀")
 
     st.divider()
 
-    # ------------------------
+    # =========================================================
     # 🟢 CLOSED TRADES
-    # ------------------------
+    # =========================================================
     st.markdown("### 🟢 Trade History")
 
     if closed_trades:
+
         st.dataframe(
             closed_trades,
             use_container_width=True,
             hide_index=True
         )
+
     else:
-        st.info("No closed trades yet")
-
-
+        st.info("No closed trades yet 🚀")
 # ------------------------
 # 📊 DASHBOARD (STABLE + CACHED)
 # ------------------------

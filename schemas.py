@@ -29,3 +29,16 @@ class TradeOut(BaseModel):
     timestamp: datetime
     class Config:
         from_attributes = True  # for SQLAlchemy
+
+class TradeUpdate(BaseModel):
+    symbol: str | None = None
+    side: str | None = None
+    entry_price: float | None = None
+    exit_price: float | None = None
+    quantity: int | None = None
+    strategy: str | None = None
+    notes: str | None = None
+
+
+class CloseTrade(BaseModel):
+    exit_price: float
