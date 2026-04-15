@@ -40,16 +40,19 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    new_user = models.User(
-        email=user.email,
-        password=auth.hash_password(user.password)
-    )
+    try:
+        new_user = models.User(
+            email=user.email,
+            password=auth.hash_password(user.password)
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    return {"message": "User created"}
+    return {"message": "User created", "user_id": new_user.id}
 
 @app.post("/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
