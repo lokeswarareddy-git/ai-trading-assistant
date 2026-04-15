@@ -145,7 +145,7 @@ if menu == "Add Trade":
             st.error(f"Unexpected error: {str(e)}")
 
 # ------------------------
-# 📊 VIEW TRADES (FULL MVP++)
+# 📊 VIEW TRADES (CLEAN SAAS STYLE)
 # ------------------------
 if menu == "View Trades":
 
@@ -196,97 +196,115 @@ if menu == "View Trades":
     st.divider()
 
     # =========================================================
-    # 🟡 OPEN TRADES (WITH UPDATE + CLOSE)
+    # 🟡 OPEN TRADES (TABLE + EDIT + CLOSE)
     # =========================================================
     st.markdown("### 🟡 Open Positions")
 
     if open_trades:
 
-        for t in open_trades:
+        # ------------------------
+        # TABLE VIEW
+        # ------------------------
+        st.dataframe(
+            open_trades,
+            use_container_width=True,
+            hide_index=True
+        )
 
-            trade_id = t["id"]
+        st.divider()
 
-            with st.expander(
-                f"{t['symbol']} | Entry: {t['entry_price']} | Qty: {t['quantity']} | PnL: {t.get('pnl', 0)}"
-            ):
+        # ------------------------
+        # SELECT TRADE FOR ACTIONS
+        # ------------------------
+        trade_ids = [t["id"] for t in open_trades]
 
-                st.write("Trade ID:", trade_id)
+        selected_id = st.selectbox("Select Trade ID to Edit / Close", trade_ids)
 
-                # ------------------------
-                # ✏️ UPDATE TRADE
-                # ------------------------
-                st.subheader("✏️ Update Trade")
+        selected_trade = next(
+            (t for t in open_trades if t["id"] == selected_id),
+            None
+        )
 
-                new_notes = st.text_area(
-                    "Notes",
-                    value=t.get("notes") or "",
-                    key=f"notes_{trade_id}"
+        if selected_trade:
+
+            st.markdown("### ✏️ Edit / Close Trade")
+
+            # ------------------------
+            # EDIT FIELDS
+            # ------------------------
+            new_notes = st.text_area(
+                "Notes",
+                value=selected_trade.get("notes") or "",
+                key=f"notes_{selected_id}"
+            )
+
+            new_strategy = st.text_input(
+                "Strategy",
+                value=selected_trade.get("strategy") or "",
+                key=f"strategy_{selected_id}"
+            )
+
+            new_entry = st.number_input(
+                "Entry Price",
+                value=float(selected_trade.get("entry_price") or 0.0),
+                key=f"entry_{selected_id}"
+            )
+
+            new_qty = st.number_input(
+                "Quantity",
+                value=int(selected_trade.get("quantity") or 1),
+                key=f"qty_{selected_id}"
+            )
+
+            # ------------------------
+            # UPDATE BUTTON
+            # ------------------------
+            if st.button("✏️ Update Trade", key=f"update_{selected_id}"):
+
+                res = requests.put(
+                    f"{API_URL}/trade/{selected_id}",
+                    json={
+                        "notes": new_notes,
+                        "strategy": new_strategy,
+                        "entry_price": new_entry,
+                        "quantity": new_qty
+                    }
                 )
 
-                new_strategy = st.text_input(
-                    "Strategy",
-                    value=t.get("strategy") or "",
-                    key=f"strategy_{trade_id}"
+                if res.status_code == 200:
+                    st.success("Trade updated")
+                    st.rerun()
+                else:
+                    st.error(res.text)
+
+            st.divider()
+
+            # ------------------------
+            # CLOSE TRADE
+            # ------------------------
+            st.markdown("### 🔒 Close Trade")
+
+            exit_price = st.number_input(
+                "Exit Price",
+                value=0.0,
+                key=f"exit_{selected_id}"
+            )
+
+            if st.button("🔒 Close Trade", key=f"close_{selected_id}"):
+
+                res = requests.post(
+                    f"{API_URL}/trade/{selected_id}/close",
+                    json={"exit_price": exit_price}
                 )
 
-                new_entry = st.number_input(
-                    "Entry Price",
-                    value=float(t.get("entry_price") or 0.0),
-                    key=f"entry_{trade_id}"
-                )
-
-                new_qty = st.number_input(
-                    "Quantity",
-                    value=int(t.get("quantity") or 1),
-                    key=f"qty_{trade_id}"
-                )
-
-                if st.button("Update Trade", key=f"update_{trade_id}"):
-
-                    res = requests.put(
-                        f"{API_URL}/trade/{trade_id}",
-                        json={
-                            "notes": new_notes,
-                            "strategy": new_strategy,
-                            "entry_price": new_entry,
-                            "quantity": new_qty
-                        }
-                    )
-
-                    if res.status_code == 200:
-                        st.success("✅ Trade updated")
-                        st.rerun()
-                    else:
-                        st.error(res.text)
-
-                st.divider()
-
-                # ------------------------
-                # 🔒 CLOSE TRADE
-                # ------------------------
-                st.subheader("🔒 Close Trade")
-
-                exit_price = st.number_input(
-                    "Exit Price",
-                    value=0.0,
-                    key=f"exit_{trade_id}"
-                )
-
-                if st.button("Close Trade", key=f"close_{trade_id}"):
-
-                    res = requests.post(
-                        f"{API_URL}/trade/{trade_id}/close",
-                        json={"exit_price": exit_price}
-                    )
-
-                    if res.status_code == 200:
-                        st.success("🔒 Trade closed")
-                        st.rerun()
-                    else:
-                        st.error(res.text)
+                if res.status_code == 200:
+                    st.success("Trade closed")
+                    st.rerun()
+                else:
+                    st.error(res.text)
 
     else:
-        st.info("No open positions")
+        st.info("No open positions 🚀")
 
     st.divider()
 
