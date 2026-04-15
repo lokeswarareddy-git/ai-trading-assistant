@@ -161,6 +161,17 @@ if menu == "View Trades":
     )
 
     # ------------------------
+    # HANDLE LOADING STATE
+    # ------------------------
+    if data is None:
+        st.warning("⏳ Loading trades...")
+        st.stop()
+
+    if not data:
+        st.info("No trades yet. Start adding trades 🚀")
+        st.stop()
+
+    # ------------------------
     # EMPTY STATE
     # ------------------------
     if not data:
