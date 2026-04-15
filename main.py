@@ -35,7 +35,7 @@ recent_requests = {}
 @app.post("/trade", response_model=schemas.TradeOut)
 def add_trade(
     trade: schemas.TradeCreate,
-    request: Request, 
+    request: Request, #adding to fix host issue
     db: Session = Depends(get_db)):
     ip = request.client.host
     now = time.time()
