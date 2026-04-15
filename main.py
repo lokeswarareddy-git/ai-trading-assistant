@@ -96,6 +96,11 @@ def reset_trades():
         conn.execute(text("DROP TABLE IF EXISTS trades"))
     return {"message": "trades table dropped"}
 
+@app.delete("/dev/reset-users")
+def reset_users():
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS users"))
+    return {"message": "users table dropped"}
 
 @app.put("/trade/{trade_id}/close")
 def close_trade(trade_id: int, exit_price: float, db: Session = Depends(get_db)):
