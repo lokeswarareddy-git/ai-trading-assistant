@@ -30,6 +30,12 @@ def get_cached_data(key, url, ttl=20):
         res = requests.get(url, timeout=10)
         if res.status_code == 200:
             data = res.json()
+
+        elif res.status_code == 429:
+            # IMPORTANT: avoid hammering backend
+            time.sleep(2)
+            return cache.get(key, ([], now))[0]
+
         else:
             data = [] if key == "trades" else {}
     except:
@@ -214,3 +220,131 @@ if menu == "View Trades":
         )
     else:
         st.info("No closed trades yet")
+
+
+# ------------------------
+# 📊 DASHBOARD (STABLE + CACHED)
+# ------------------------
+if menu == "Dashboard":
+
+    st.header("📊 Trading Dashboard")
+
+    # ------------------------
+    # GET DATA (CACHED)
+    # ------------------------
+    stats = get_cached_data("stats", f"{API_URL}/stats")
+
+    # ------------------------
+    # HANDLE EMPTY / FAIL STATE
+    # ------------------------
+    if not stats or not isinstance(stats, dict):
+        st.error("❌ Failed to load stats. Please try again.")
+        st.stop()
+
+    total_trades = stats.get("total_trades", 0)
+
+    # ------------------------
+    # EMPTY STATE
+    # ------------------------
+    if total_trades == 0:
+        st.info("No trades yet. Start logging to build your performance analytics 📈")
+        st.stop()
+
+    pnl = stats.get("total_pnl", 0)
+    win_rate = stats.get("win_rate", 0)
+
+    # ------------------------
+    # HEADER SUMMARY STRIP
+    # ------------------------
+    colA, colB, colC = st.columns([1, 1, 2])
+
+    with colA:
+        if pnl >= 0:
+            st.success(f"💰 PnL: +${pnl:.2f}")
+        else:
+            st.error(f"💰 PnL: ${pnl:.2f}")
+
+    with colB:
+        st.metric("Win Rate", f"{win_rate:.2f}%")
+
+    with colC:
+        if win_rate > 50 and pnl > 0:
+            st.success("🟢 Strong Edge Detected")
+        elif win_rate < 40:
+            st.warning("🟡 Performance Needs Review")
+        else:
+            st.info("🔵 Stable / Neutral Performance")
+
+    st.divider()
+
+    # ------------------------
+    # KPI CARDS
+    # ------------------------
+    st.markdown("### 📊 Key Performance Metrics")
+
+    k1, k2, k3, k4 = st.columns(4)
+
+    with k1:
+        st.metric("Total Trades", total_trades)
+
+    with k2:
+        st.metric("Winning Trades", stats.get("winning_trades", 0))
+
+    with k3:
+        st.metric("Losing Trades", stats.get("losing_trades", 0))
+
+    with k4:
+        avg_pnl = pnl / total_trades if total_trades else 0
+        st.metric("Avg PnL / Trade", f"${avg_pnl:.2f}")
+
+    st.divider()
+
+    # ------------------------
+    # PERFORMANCE INSIGHTS
+    # ------------------------
+    st.markdown("### 🧠 Performance Intelligence")
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+
+        if win_rate < 40:
+            st.warning("""
+            ⚠️ Weak Win Rate Detected
+
+            - Review entry strategy
+            - Avoid emotional trading
+            - Focus on high-quality setups
+            """)
+
+        elif pnl > 0 and win_rate > 55:
+            st.success("""
+            🔥 Strong Trading Edge
+
+            - Consistent profitability
+            - Good discipline
+            - Scale gradually
+            """)
+
+        elif pnl > 0:
+            st.info("""
+            👍 Profitable but inconsistent
+
+            - Improve trade selection
+            - Increase win rate
+            """)
+
+        else:
+            st.info("""
+            📉 Early Stage Performance
+
+            - Focus on capital preservation
+            - Reduce losses first
+            """)
+
+    with col2:
+        st.markdown("#### 🧾 Quick Stats")
+
+        st.write(f"Trades: **{total_trades}**")
+        st.write(f"Win Rate: **{win_rate:.2f}%**")
+        st.write(f"PnL: **${pnl:.2f}**")
