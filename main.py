@@ -37,7 +37,7 @@ def add_trade(
     trade: schemas.TradeCreate,
     request: Request, 
     db: Session = Depends(get_db)):
-    ip = Request.client.host
+    ip = request.client.host
     now = time.time()
 
     if ip in recent_requests:
