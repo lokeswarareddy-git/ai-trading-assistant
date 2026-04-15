@@ -34,13 +34,8 @@ def get_db():
 recent_requests = {}
 @app.post("/trade", response_model=schemas.TradeOut)
 def add_trade(
-<<<<<<< HEAD
-    trade: schemas.TradeCreate, 
-    request: Request,
-=======
     trade: schemas.TradeCreate,
     request: Request, #adding to fix host issue
->>>>>>> dev
     db: Session = Depends(get_db)):
     ip = request.client.host
     now = time.time()
