@@ -33,7 +33,10 @@ def get_db():
         db.close()
 recent_requests = {}
 @app.post("/trade", response_model=schemas.TradeOut)
-def add_trade(trade: schemas.TradeCreate, db: Session = Depends(get_db)):
+def add_trade(
+    trade: schemas.TradeCreate,
+    request: Request, 
+    db: Session = Depends(get_db)):
     ip = Request.client.host
     now = time.time()
 
