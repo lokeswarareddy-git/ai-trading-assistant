@@ -1,10 +1,19 @@
-from sqlalchemy import Column, Integer, Float, String, DateTime
+from sqlalchemy import Column, Integer, Float, String, DateTime, ForeignKey
 from datetime import datetime
 from database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password = Column(String, nullable=False)
+
 
 class Trade(Base):
     __tablename__ = "trades"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
     symbol = Column(String, index=True)
     side = Column(String, nullable=False)       # BUY / SELL
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)

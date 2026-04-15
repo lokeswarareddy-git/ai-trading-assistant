@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from typing import List
-import models, schemas, crud
+import models, schemas, crud, auth
 from database import SessionLocal, engine
 import time
 # # ✅ THIS LINE MUST RUN ON STARTUP
@@ -31,9 +31,46 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@app.post("/signup")
+def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
+
+    existing = db.query(models.User).filter(models.User.email == user.email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    new_user = models.User(
+        email=user.email,
+        password=auth.hash_password(user.password)
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {"message": "User created"}
+
+@app.post("/login")
+def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
+
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid email")
+
+    if not auth.verify_password(user.password, db_user.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    return {
+        "user_id": db_user.id,
+        "email": db_user.email
+    }
+
 recent_requests = {}
 @app.post("/trade", response_model=schemas.TradeOut)
 def add_trade(
+    user_id: int,
     trade: schemas.TradeCreate,
     request: Request, #adding to fix host issue
     db: Session = Depends(get_db)):
@@ -44,12 +81,11 @@ def add_trade(
         if now - recent_requests[ip] < 2:
             raise HTTPException(status_code=429, detail="Too many requests")
     recent_requests[ip] = now
-    return crud.create_trade(db, trade)
+    return crud.create_trade(db, trade, user_id)
 
 @app.get("/trades", response_model=List[schemas.TradeOut])
-def read_trades(db: Session = Depends(get_db)):
-    return crud.get_trades(db)
-
+def read_trades(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_trades(db, user_id)
 
 @app.delete("/dev/reset-trades")
 def reset_trades():

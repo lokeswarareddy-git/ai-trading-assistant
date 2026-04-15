@@ -3,6 +3,14 @@ from datetime import datetime
 from typing import Optional
 
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 class TradeCreate(BaseModel):
     symbol: str
     side: str
@@ -42,3 +50,5 @@ class TradeUpdate(BaseModel):
 
 class CloseTrade(BaseModel):
     exit_price: float
+
+

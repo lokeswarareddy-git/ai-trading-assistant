@@ -15,7 +15,7 @@ def calculate_pnl(side, entry_price, exit_price, quantity):
         elif side == "SELL":
             return (entry_price - exit_price) * quantity
 
-def create_trade(db: Session, trade: schemas.TradeCreate):
+def create_trade(db: Session, trade: schemas.TradeCreate, user_id: int):
 
     # 1. Calculate PnL
 
@@ -23,6 +23,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
 
     # 2. Create the Database Model instance.
     db_trade = models.Trade(
+        user_id=user_id,
         symbol=trade.symbol,
         side=trade.side,
         entry_price=trade.entry_price,
@@ -34,7 +35,7 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
         trade.side,
         trade.entry_price,
         trade.exit_price,
-        trade.quantity
+        trade.quantity   
     ),
     status="CLOSED" if trade.exit_price is not None else "OPEN"
     )
@@ -47,8 +48,11 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
     return db_trade
 
 
-def get_trades(db: Session):
-    return db.query(models.Trade).order_by(models.Trade.timestamp.desc()).all()
+def get_trades(db: Session, user_id: int):
+    return db.query(models.Trade)\
+        .filter(models.Trade.user_id == user_id)\
+        .order_by(models.Trade.timestamp.desc())\
+        .all()
 
 
 def update_trade(db: Session, trade_id: int, updates: schemas.TradeUpdate):
