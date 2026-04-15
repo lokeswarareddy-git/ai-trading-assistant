@@ -49,3 +49,49 @@ def create_trade(db: Session, trade: schemas.TradeCreate):
 
 def get_trades(db: Session):
     return db.query(models.Trade).order_by(models.Trade.timestamp.desc()).all()
+
+
+def update_trade(db: Session, trade_id: int, updates: schemas.TradeUpdate):
+
+    db_trade = db.query(models.Trade).filter(models.Trade.id == trade_id).first()
+
+    if not db_trade:
+        return None
+
+    for key, value in updates.dict(exclude_unset=True).items():
+        setattr(db_trade, key, value)
+
+    # recompute PnL if prices exist
+    if db_trade.entry_price and db_trade.exit_price:
+        db_trade.pnl = calculate_pnl(
+            db_trade.side,
+            db_trade.entry_price,
+            db_trade.exit_price,
+            db_trade.quantity
+        )
+
+    db.commit()
+    db.refresh(db_trade)
+    return db_trade
+
+
+def close_trade(db: Session, trade_id: int, exit_price: float):
+
+    db_trade = db.query(models.Trade).filter(models.Trade.id == trade_id).first()
+
+    if not db_trade:
+        return None
+
+    db_trade.exit_price = exit_price
+    db_trade.status = "CLOSED"
+
+    db_trade.pnl = calculate_pnl(
+        db_trade.side,
+        db_trade.entry_price,
+        db_trade.exit_price,
+        db_trade.quantity
+    )
+
+    db.commit()
+    db.refresh(db_trade)
+    return db_trade
