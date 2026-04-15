@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from typing import List
 import models, schemas, crud
 from database import SessionLocal, engine
-
+import time
 # # ✅ THIS LINE MUST RUN ON STARTUP
 # models.Base.metadata.create_all(bind=engine)
 
@@ -30,9 +31,16 @@ def get_db():
         yield db
     finally:
         db.close()
-
+recent_requests = {}
 @app.post("/trade", response_model=schemas.TradeOut)
 def add_trade(trade: schemas.TradeCreate, db: Session = Depends(get_db)):
+    ip = Request.client.host
+    now = time.time()
+
+    if ip in recent_requests:
+        if now - recent_requests[ip] < 2:
+            raise HTTPException(status_code=429, detail="Too many requests")
+    recent_requests[ip] = now
     return crud.create_trade(db, trade)
 
 @app.get("/trades", response_model=List[schemas.TradeOut])
