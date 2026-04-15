@@ -145,11 +145,21 @@ if menu == "Add Trade":
             st.error(f"Unexpected error: {str(e)}")
 
 # ------------------------
-# 📊 VIEW TRADES (CLEAN SAAS STYLE)
+# 📊 VIEW TRADES (CLEAN SAAS STYLE + UX MESSAGES)
 # ------------------------
 if menu == "View Trades":
 
     st.header("📊 Trades Overview")
+
+    # ------------------------
+    # SESSION MESSAGE (TOAST STYLE)
+    # ------------------------
+    if "toast" not in st.session_state:
+        st.session_state.toast = None
+
+    if st.session_state.toast:
+        st.success(st.session_state.toast)
+        st.session_state.toast = None
 
     # ------------------------
     # LOAD DATA
@@ -202,9 +212,6 @@ if menu == "View Trades":
 
     if open_trades:
 
-        # ------------------------
-        # TABLE VIEW
-        # ------------------------
         st.dataframe(
             open_trades,
             use_container_width=True,
@@ -213,9 +220,6 @@ if menu == "View Trades":
 
         st.divider()
 
-        # ------------------------
-        # SELECT TRADE FOR ACTIONS
-        # ------------------------
         trade_ids = [t["id"] for t in open_trades]
 
         selected_id = st.selectbox("Select Trade ID to Edit / Close", trade_ids)
@@ -229,9 +233,6 @@ if menu == "View Trades":
 
             st.markdown("### ✏️ Edit / Close Trade")
 
-            # ------------------------
-            # EDIT FIELDS
-            # ------------------------
             new_notes = st.text_area(
                 "Notes",
                 value=selected_trade.get("notes") or "",
@@ -257,22 +258,24 @@ if menu == "View Trades":
             )
 
             # ------------------------
-            # UPDATE BUTTON
+            # ✏️ UPDATE TRADE
             # ------------------------
             if st.button("✏️ Update Trade", key=f"update_{selected_id}"):
 
-                res = requests.put(
-                    f"{API_URL}/trade/{selected_id}",
-                    json={
-                        "notes": new_notes,
-                        "strategy": new_strategy,
-                        "entry_price": new_entry,
-                        "quantity": new_qty
-                    }
-                )
+                with st.spinner("Updating trade..."):
+
+                    res = requests.put(
+                        f"{API_URL}/trade/{selected_id}",
+                        json={
+                            "notes": new_notes,
+                            "strategy": new_strategy,
+                            "entry_price": new_entry,
+                            "quantity": new_qty
+                        }
+                    )
 
                 if res.status_code == 200:
-                    st.success("Trade updated")
+                    st.session_state.toast = "✏️ Trade updated successfully"
                     st.rerun()
                 else:
                     st.error(res.text)
@@ -280,7 +283,7 @@ if menu == "View Trades":
             st.divider()
 
             # ------------------------
-            # CLOSE TRADE
+            # 🔒 CLOSE TRADE
             # ------------------------
             st.markdown("### 🔒 Close Trade")
 
@@ -292,13 +295,15 @@ if menu == "View Trades":
 
             if st.button("🔒 Close Trade", key=f"close_{selected_id}"):
 
-                res = requests.post(
-                    f"{API_URL}/trade/{selected_id}/close",
-                    json={"exit_price": exit_price}
-                )
+                with st.spinner("Closing trade..."):
+
+                    res = requests.post(
+                        f"{API_URL}/trade/{selected_id}/close",
+                        json={"exit_price": exit_price}
+                    )
 
                 if res.status_code == 200:
-                    st.success("Trade closed")
+                    st.session_state.toast = "🔒 Trade closed successfully"
                     st.rerun()
                 else:
                     st.error(res.text)
