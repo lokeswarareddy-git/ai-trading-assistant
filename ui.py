@@ -40,7 +40,7 @@ def get_cached_data(key, url, ttl=20):
 
 
 
-    # ------------------------
+# ------------------------
 # ➕ ADD TRADE
 # ------------------------
 if menu == "Add Trade":
@@ -137,3 +137,80 @@ if menu == "Add Trade":
 
         except Exception as e:
             st.error(f"Unexpected error: {str(e)}")
+
+# ------------------------
+# 📊 VIEW TRADES (CACHED + IMPROVED)
+# ------------------------
+if menu == "View Trades":
+
+    st.header("📊 Trades Overview")
+
+    # ------------------------
+    # LOAD DATA (WITH CACHE)
+    # ------------------------
+    data = get_cached_data(
+        key="trades",
+        url=f"{API_URL}/trades",
+        ttl=20
+    )
+
+    # ------------------------
+    # EMPTY STATE
+    # ------------------------
+    if not data:
+        st.info("No trades yet. Start adding trades 🚀")
+        st.stop()
+
+    # ------------------------
+    # SPLIT DATA
+    # ------------------------
+    open_trades = [t for t in data if t.get("status") == "OPEN"]
+    closed_trades = [t for t in data if t.get("status") == "CLOSED"]
+
+    # ------------------------
+    # SUMMARY SECTION
+    # ------------------------
+    st.markdown("### 📊 Quick Overview")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Total Trades", len(data))
+
+    with col2:
+        st.metric("Open Positions", len(open_trades))
+
+    with col3:
+        st.metric("Closed Trades", len(closed_trades))
+
+    st.divider()
+
+    # ------------------------
+    # 🟡 OPEN POSITIONS
+    # ------------------------
+    st.markdown("### 🟡 Open Positions")
+
+    if open_trades:
+        st.dataframe(
+            open_trades,
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("No open positions")
+
+    st.divider()
+
+    # ------------------------
+    # 🟢 CLOSED TRADES
+    # ------------------------
+    st.markdown("### 🟢 Trade History")
+
+    if closed_trades:
+        st.dataframe(
+            closed_trades,
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("No closed trades yet")
