@@ -15,9 +15,9 @@ app = FastAPI()
 # ✅ BEST PRACTICE: run on startup
 @app.on_event("startup")
 def startup():
-    models.Base.metadata.drop_all(bind=engine)   # ⚠️ TEMP (dev only)
+    #models.Base.metadata.drop_all(bind=engine)   # ⚠️ TEMP (dev only)
     models.Base.metadata.create_all(bind=engine)
-    
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # later you can restrict this

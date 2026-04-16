@@ -4,19 +4,20 @@ import time
 
 API_URL = "https://ai-trading-assistant-2ji8.onrender.com"
 
-st.set_page_config(page_title="Trading Journal AI", layout="wide")
+st.set_page_config(page_title="Trading Journal", layout="wide")
 
 st.title("📈 AI Trading Assistant")
-st.caption("Track trades. Learn patterns. Improve discipline.")
+st.caption("Track trades. Improve discipline. Build consistency.")
 
 # ------------------------
-# AUTH STATE
+# 🔐 AUTH STATE
 # ------------------------
 if "user_id" not in st.session_state:
     st.session_state.user_id = None
 
 if "email" not in st.session_state:
     st.session_state.email = None
+
 
 # ------------------------
 # MENU
@@ -27,7 +28,19 @@ menu = st.sidebar.selectbox(
 )
 
 # ------------------------
-# CACHE
+# LOGOUT
+# ------------------------
+if st.session_state.user_id:
+    st.sidebar.success(f"Logged in: {st.session_state.email}")
+
+    if st.sidebar.button("Logout"):
+        st.session_state.user_id = None
+        st.session_state.email = None
+        st.rerun()
+
+
+# ------------------------
+# CACHE HELPER
 # ------------------------
 def get_cached_data(key, url, ttl=20):
     now = time.time()
@@ -47,6 +60,11 @@ def get_cached_data(key, url, ttl=20):
 
         if res.status_code == 200:
             data = res.json()
+
+        elif res.status_code == 429:
+            time.sleep(2)
+            return cache.get(key, ([], now))[0]
+
         else:
             data = [] if key == "trades" else {}
 
@@ -58,86 +76,57 @@ def get_cached_data(key, url, ttl=20):
 
 
 # =========================================================
-# LOGIN
+# 🔐 LOGIN / SIGNUP
 # =========================================================
 if menu == "Login":
 
-    st.header("🔐 Login")
+    st.header("🔐 Login / Signup")
 
-    email = st.text_input("Email")
-    password = st.text_input("Password", type="password")
+    tab1, tab2 = st.tabs(["Login", "Signup"])
 
-    if st.button("Login"):
-        res = requests.post(f"{API_URL}/login", json={
-            "email": email,
-            "password": password
-        })
+    with tab1:
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
 
-        if res.status_code == 200:
-            data = res.json()
-            st.session_state.user_id = data["user_id"]
-            st.session_state.email = data["email"]
-            st.success("Login successful")
-            st.rerun()
-        else:
-            st.error(res.text)
+        if st.button("Login"):
 
-# ------------------------
-# AUTH GUARD
-# ------------------------
+            res = requests.post(
+                f"{API_URL}/login",
+                json={"email": email, "password": password}
+            )
+
+            if res.status_code == 200:
+                data = res.json()
+                st.session_state.user_id = data["user_id"]
+                st.session_state.email = data["email"]
+                st.success("Login successful")
+                st.rerun()
+            else:
+                st.error(res.text)
+
+    with tab2:
+        email = st.text_input("Email", key="signup_email")
+        password = st.text_input("Password", type="password", key="signup_pass")
+
+        if st.button("Signup"):
+
+            res = requests.post(
+                f"{API_URL}/signup",
+                json={"email": email, "password": password}
+            )
+
+            if res.status_code == 200:
+                st.success("Signup successful. Please login.")
+            else:
+                st.error(res.text)
+
+
+# =========================================================
+# 🚨 AUTH GUARD
+# =========================================================
 if menu != "Login" and not st.session_state.user_id:
     st.warning("Please login first")
     st.stop()
-
-
-# =========================================================
-# 🧠 AI INSIGHTS ENGINE (FRONTEND LOGIC)
-# =========================================================
-def generate_insights(trades):
-    if not trades:
-        return ["No trades to analyze"]
-
-    insights = []
-
-    closed = [t for t in trades if t.get("status") == "CLOSED"]
-    open_trades = [t for t in trades if t.get("status") == "OPEN"]
-
-    pnl = sum(t.get("pnl") or 0 for t in closed)
-
-    wins = len([t for t in closed if (t.get("pnl") or 0) > 0])
-    losses = len([t for t in closed if (t.get("pnl") or 0) <= 0])
-
-    win_rate = (wins / len(closed) * 100) if closed else 0
-
-    # ------------------------
-    # CORE INSIGHTS
-    # ------------------------
-    if win_rate < 40:
-        insights.append("⚠️ Low win rate — you may be overtrading or entering low-quality setups")
-
-    if pnl < 0:
-        insights.append("📉 Negative PnL — focus on capital preservation first")
-
-    if len(open_trades) > 5:
-        insights.append("⚠️ Too many open trades — risk exposure is high")
-
-    if win_rate > 55 and pnl > 0:
-        insights.append("🔥 Strong strategy detected — consider scaling gradually")
-
-    # strategy clustering
-    strategies = {}
-    for t in closed:
-        s = t.get("strategy", "Unknown")
-        strategies[s] = strategies.get(s, 0) + (t.get("pnl") or 0)
-
-    if strategies:
-        best = max(strategies, key=strategies.get)
-        worst = min(strategies, key=strategies.get)
-
-        insights.append(f"🏆 Best strategy: {best}")
-        insights.append(f"❌ Weak strategy: {worst}")
-
-    return insights
 
 
 # =========================================================
@@ -149,29 +138,35 @@ if menu == "Add Trade":
 
     with st.form("trade_form", clear_on_submit=True):
 
-        symbol = st.text_input("Symbol")
+        symbol = st.text_input("Symbol (e.g. AAPL)")
         side = st.selectbox("Side", ["BUY", "SELL"])
 
         col1, col2 = st.columns(2)
 
         with col1:
-            entry = st.number_input("Entry Price", min_value=0.0)
+            entry = st.number_input("Entry Price", min_value=0.0, step=0.01)
 
         with col2:
-            exit_price = st.number_input("Exit Price", min_value=0.0)
+            exit_price = st.number_input("Exit Price (optional)", min_value=0.0, step=0.01)
 
-        qty = st.number_input("Quantity", min_value=1)
+        qty = st.number_input("Quantity", min_value=1, step=1)
+
+        st.markdown("### 🧠 Trade Context")
 
         strategy = st.selectbox(
-            "Strategy",
-            ["Scalping", "Day Trade", "Swing", "Breakout", "Reversal"]
+            "Strategy Tag",
+            ["Scalping", "Day Trade", "Swing", "Breakout", "Reversal", "Other"]
         )
 
-        notes = st.text_area("Notes")
+        notes = st.text_area("Trade Reasoning")
 
-        submit = st.form_submit_button("Submit")
+        submit = st.form_submit_button("Submit Trade")
 
     if submit:
+
+        if not symbol:
+            st.error("Symbol is required")
+            st.stop()
 
         payload = {
             "symbol": symbol,
@@ -183,15 +178,28 @@ if menu == "Add Trade":
             "notes": notes
         }
 
+        if "last_trade" not in st.session_state:
+            st.session_state.last_trade = None
+
+        if st.session_state.last_trade == payload:
+            st.warning("Duplicate trade prevented")
+            st.stop()
+
+        st.session_state.last_trade = payload
+
         try:
-            res = requests.post(
-                f"{API_URL}/trade",
-                params={"user_id": st.session_state.user_id},
-                json=payload
-            )
+            with st.spinner("Submitting trade..."):
+                res = requests.post(
+                    f"{API_URL}/trade",
+                    params={"user_id": st.session_state.user_id},
+                    json=payload,
+                    timeout=10
+                )
 
             if res.status_code == 200:
-                st.success("Trade added")
+                st.success("Trade added successfully")
+                st.json(res.json())
+
             else:
                 st.error(res.text)
 
@@ -204,15 +212,20 @@ if menu == "Add Trade":
 # =========================================================
 if menu == "View Trades":
 
-    st.header("📊 Trades")
+    st.header("📊 Trades Overview")
+
+    if "toast" in st.session_state:
+        st.success(st.session_state.toast)
+        st.session_state.toast = None
 
     data = get_cached_data(
         "trades",
-        f"{API_URL}/trades?user_id={st.session_state.user_id}"
+        f"{API_URL}/trades?user_id={st.session_state.user_id}",
+        ttl=20
     )
 
     if not data:
-        st.info("No trades yet")
+        st.info("No trades yet 🚀")
         st.stop()
 
     open_trades = [t for t in data if t.get("status") == "OPEN"]
@@ -224,75 +237,74 @@ if menu == "View Trades":
 
     st.divider()
 
-    st.subheader("Open Trades")
-    st.dataframe(open_trades)
+    st.subheader("🟡 Open Trades")
+    st.dataframe(open_trades, use_container_width=True)
 
-    st.subheader("Closed Trades")
-    st.dataframe(closed_trades)
+    trade_ids = [t["id"] for t in open_trades]
+
+    if trade_ids:
+
+        selected_id = st.selectbox("Select Trade", trade_ids)
+
+        trade = next(t for t in open_trades if t["id"] == selected_id)
+
+        notes = st.text_area("Notes", trade.get("notes") or "")
+        strategy = st.text_input("Strategy", trade.get("strategy") or "")
+        entry = st.number_input("Entry", value=float(trade.get("entry_price") or 0))
+        qty = st.number_input("Qty", value=int(trade.get("quantity") or 1))
+
+        if st.button("Update Trade"):
+
+            res = requests.put(
+                f"{API_URL}/trade/{selected_id}",
+                json={
+                    "notes": notes,
+                    "strategy": strategy,
+                    "entry_price": entry,
+                    "quantity": qty
+                }
+            )
+
+            if res.status_code == 200:
+                st.session_state.toast = "Trade updated"
+                st.rerun()
+
+        exit_price = st.number_input("Exit Price", value=0.0)
+
+        if st.button("Close Trade"):
+
+            res = requests.post(
+                f"{API_URL}/trade/{selected_id}/close",
+                json={"exit_price": exit_price}
+            )
+
+            if res.status_code == 200:
+                st.session_state.toast = "Trade closed"
+                st.rerun()
+
+    st.divider()
+
+    st.subheader("🟢 Closed Trades")
+    st.dataframe(closed_trades, use_container_width=True)
 
 
 # =========================================================
-# 🧠 DASHBOARD + AI INSIGHTS
+# 📊 DASHBOARD
 # =========================================================
 if menu == "Dashboard":
 
-    st.header("📊 AI Dashboard")
+    st.header("📊 Trading Dashboard")
 
-    data = get_cached_data(
-        "trades",
-        f"{API_URL}/trades?user_id={st.session_state.user_id}"
-    )
+    stats = get_cached_data("stats", f"{API_URL}/stats?user_id={st.session_state.user_id}")
 
-    stats = get_cached_data(
-        "stats",
-        f"{API_URL}/stats?user_id={st.session_state.user_id}"
-    )
-
-    if not data:
-        st.info("No trades yet")
+    if not stats:
+        st.info("No stats available")
         st.stop()
 
     pnl = stats.get("total_pnl", 0)
     win_rate = stats.get("win_rate", 0)
 
-    # ------------------------
-    # KPI
-    # ------------------------
-    col1, col2, col3 = st.columns(3)
+    st.metric("PnL", pnl)
+    st.metric("Win Rate", f"{win_rate}%")
 
-    with col1:
-        st.metric("PnL", f"${pnl:.2f}")
-
-    with col2:
-        st.metric("Win Rate", f"{win_rate:.2f}%")
-
-    with col3:
-        st.metric("Trades", len(data))
-
-    st.divider()
-
-    # ------------------------
-    # AI INSIGHTS SECTION
-    # ------------------------
-    st.subheader("🧠 AI Insights")
-
-    insights = generate_insights(data)
-
-    for i in insights:
-        st.info(i)
-
-    st.divider()
-
-    # ------------------------
-    # PERFORMANCE INTERPRETATION
-    # ------------------------
-    st.subheader("📈 What this means")
-
-    if win_rate < 40:
-        st.warning("Your system is not stable yet — reduce trade frequency and refine entries")
-
-    elif pnl > 0 and win_rate > 55:
-        st.success("You have a working edge — focus on scaling and consistency")
-
-    else:
-        st.info("You are in development phase — focus on discipline and journaling quality")
+    st.metric("Total Trades", stats.get("total_trades", 0))
