@@ -15,8 +15,7 @@ app = FastAPI()
 # ✅ BEST PRACTICE: run on startup
 @app.on_event("startup")
 def startup():
-    print("🚀 Creating tables...")
-    print(models.Base.metadata.tables.keys())  # debug
+    models.Base.metadata.drop_all(bind=engine)   # ⚠️ TEMP (dev only)
     models.Base.metadata.create_all(bind=engine)
     
 app.add_middleware(
