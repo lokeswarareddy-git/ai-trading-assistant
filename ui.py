@@ -86,20 +86,22 @@ def get_cached_data(key, url, ttl=20):
     cache[key] = (data, now)
     return data
 
-
 # =========================================================
-# 🔐 LOGIN / SIGNUP (FIXED UX)
+# 🔐 LOGIN / SIGNUP (FIXED UX + STATE SAFE)
 # =========================================================
 if menu == "Login":
 
     st.header("🔐 Account Access")
 
     # ------------------------
-    # STATE CONTROL
+    # INIT STATE
     # ------------------------
     if "auth_mode" not in st.session_state:
         st.session_state.auth_mode = "Login"
 
+    # ------------------------
+    # AUTH MODE SELECTOR
+    # ------------------------
     auth_mode = st.radio(
         "Choose Option",
         ["Login", "Signup"],
@@ -107,13 +109,22 @@ if menu == "Login":
         horizontal=True
     )
 
-    # ---------------- LOGIN ----------------
+    # 🔥 keep state synced
+    st.session_state.auth_mode = auth_mode
+
+    # =====================================================
+    # LOGIN
+    # =====================================================
     if auth_mode == "Login":
 
         email_login = st.text_input("Email", key="login_email")
         password_login = st.text_input("Password", type="password", key="login_pass")
 
         if st.button("Login"):
+
+            if not email_login or not password_login:
+                st.warning("Please fill all fields")
+                st.stop()
 
             res = requests.post(
                 f"{API_URL}/login",
@@ -127,12 +138,17 @@ if menu == "Login":
                 st.session_state.email = email_login
                 st.session_state.logged_in = True
 
+                st.session_state.menu = "Add Trade"   # 🚀 AUTO REDIRECT FIX
+
                 st.success("Login successful 🚀")
                 st.rerun()
+
             else:
                 st.error("Invalid credentials")
 
-    # ---------------- SIGNUP ----------------
+    # =====================================================
+    # SIGNUP
+    # =====================================================
     elif auth_mode == "Signup":
 
         email_signup = st.text_input("Email", key="signup_email")
@@ -140,16 +156,26 @@ if menu == "Login":
 
         if st.button("Signup"):
 
+            if not email_signup or not password_signup:
+                st.warning("Please fill all fields")
+                st.stop()
+
             res = requests.post(
                 f"{API_URL}/signup",
                 json={"email": email_signup, "password": password_signup}
             )
 
             if res.status_code == 200:
-                st.success("Signup successful! Switching to Login...")
 
-                # 🔥 AUTO SWITCH
+                st.success("Signup successful! Redirecting to Login...")
+
+                # 🔥 FIXED STATE SWITCH
                 st.session_state.auth_mode = "Login"
+
+                # optional: clear signup fields UX cleanup
+                st.session_state.signup_email = ""
+                st.session_state.signup_pass = ""
+
                 st.rerun()
 
             else:
