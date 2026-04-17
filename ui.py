@@ -259,13 +259,11 @@ elif menu == "View Trades":
     # st.metric("Total Trades", len(data))
     # st.metric("Open Trades", len(open_trades))
     # st.metric("Closed Trades", len(closed_trades))
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Trades", len(data))
     col2.metric("Open Trades", len(open_trades))
     col3.metric("Closed Trades", len(closed_trades))
-
-    col4.metric("PnL", pnl)
 
     st.divider()
 
