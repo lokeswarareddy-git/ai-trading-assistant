@@ -87,7 +87,7 @@ def get_cached_data(key, url, ttl=20):
     return data
 
 # =========================================================
-# 🔐 LOGIN / SIGNUP (FIXED UX + STATE SAFE)
+# 🔐 LOGIN / SIGNUP (FIXED + STREAMLIT SAFE)
 # =========================================================
 if menu == "Login":
 
@@ -99,8 +99,19 @@ if menu == "Login":
     if "auth_mode" not in st.session_state:
         st.session_state.auth_mode = "Login"
 
+    if "clear_signup" not in st.session_state:
+        st.session_state.clear_signup = False
+
     # ------------------------
-    # AUTH MODE SELECTOR
+    # RESET SIGNUP FIELDS SAFELY (BEFORE WIDGET CREATION)
+    # ------------------------
+    if st.session_state.clear_signup:
+        st.session_state.signup_email = ""
+        st.session_state.signup_pass = ""
+        st.session_state.clear_signup = False
+
+    # ------------------------
+    # AUTH MODE TOGGLE
     # ------------------------
     auth_mode = st.radio(
         "Choose Option",
@@ -109,7 +120,6 @@ if menu == "Login":
         horizontal=True
     )
 
-    # 🔥 keep state synced
     st.session_state.auth_mode = auth_mode
 
     # =====================================================
@@ -138,7 +148,8 @@ if menu == "Login":
                 st.session_state.email = email_login
                 st.session_state.logged_in = True
 
-                st.session_state.menu = "Add Trade"   # 🚀 AUTO REDIRECT FIX
+                # 🚀 redirect to Add Trade
+                st.session_state.menu = "Add Trade"
 
                 st.success("Login successful 🚀")
                 st.rerun()
@@ -169,12 +180,9 @@ if menu == "Login":
 
                 st.success("Signup successful! Redirecting to Login...")
 
-                # 🔥 FIXED STATE SWITCH
+                # 🚀 SAFE RESET FLOW
+                st.session_state.clear_signup = True
                 st.session_state.auth_mode = "Login"
-
-                # optional: clear signup fields UX cleanup
-                st.session_state.signup_email = ""
-                st.session_state.signup_pass = ""
 
                 st.rerun()
 
