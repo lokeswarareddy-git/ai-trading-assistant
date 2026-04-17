@@ -76,51 +76,66 @@ def get_cached_data(key, url, ttl=20):
 
 
 # =========================================================
-# 🔐 LOGIN / SIGNUP
+# 🔐 LOGIN / SIGNUP (IMPROVED)
 # =========================================================
 if menu == "Login":
 
-    st.header("🔐 Login / Signup")
+    st.header("🔐 Account Access")
 
     tab1, tab2 = st.tabs(["Login", "Signup"])
 
+    # ------------------------
+    # LOGIN
+    # ------------------------
     with tab1:
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
+
+        email_login = st.text_input("Email", key="login_email")
+        password_login = st.text_input("Password", type="password", key="login_pass")
 
         if st.button("Login"):
 
-            res = requests.post(
-                f"{API_URL}/login",
-                json={"email": email, "password": password}
-            )
-
-            if res.status_code == 200:
-                data = res.json()
-                st.session_state.user_id = data["user_id"]
-                st.session_state.email = data["email"]
-                st.success("Login successful")
-                st.rerun()
+            if not email_login or not password_login:
+                st.warning("Please fill all fields")
             else:
-                st.error(res.text)
+                res = requests.post(
+                    f"{API_URL}/login",
+                    json={"email": email_login, "password": password_login}
+                )
 
+                if res.status_code == 200:
+                    data = res.json()
+
+                    st.session_state.user_id = data["user_id"]
+                    st.session_state.email = email_login
+                    st.session_state.logged_in = True
+
+                    st.success(f"Welcome {email_login} 🚀")
+                    st.rerun()
+                else:
+                    st.error("Invalid credentials")
+
+    # ------------------------
+    # SIGNUP
+    # ------------------------
     with tab2:
-        email = st.text_input("Email", key="signup_email")
-        password = st.text_input("Password", type="password", key="signup_pass")
+
+        email_signup = st.text_input("Email", key="signup_email")
+        password_signup = st.text_input("Password", type="password", key="signup_pass")
 
         if st.button("Signup"):
 
-            res = requests.post(
-                f"{API_URL}/signup",
-                json={"email": email, "password": password}
-            )
-
-            if res.status_code == 200:
-                st.success("Signup successful. Please login.")
+            if not email_signup or not password_signup:
+                st.warning("Please fill all fields")
             else:
-                st.error(res.text)
+                res = requests.post(
+                    f"{API_URL}/signup",
+                    json={"email": email_signup, "password": password_signup}
+                )
 
-
+                if res.status_code == 200:
+                    st.success("Signup successful. Please login.")
+                else:
+                    st.error(res.text)
 # =========================================================
 # 🚨 AUTH GUARD
 # =========================================================
