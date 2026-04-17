@@ -217,7 +217,7 @@ elif menu == "Add Trade":
 # =========================================================
 elif menu == "View Trades":
 
-    st.header("📊 Trades")
+    st.header("📊 Trades Overview")
 
     data = get_cached_data(
         "trades",
@@ -228,10 +228,95 @@ elif menu == "View Trades":
         st.info("No trades yet 🚀")
         st.stop()
 
+    # =====================================================
+    # SPLIT OPEN / CLOSED
+    # =====================================================
+    open_trades = [t for t in data if t.get("status") == "OPEN"]
+    closed_trades = [t for t in data if t.get("status") == "CLOSED"]
+
+    # =====================================================
+    # SUMMARY METRICS
+    # =====================================================
     st.metric("Total Trades", len(data))
+    st.metric("Open Trades", len(open_trades))
+    st.metric("Closed Trades", len(closed_trades))
 
-    st.dataframe(data, use_container_width=True)
+    st.divider()
 
+    # =====================================================
+    # 🟡 OPEN TRADES (EDIT + CLOSE)
+    # =====================================================
+    st.subheader("🟡 Open Positions")
+
+    if not open_trades:
+        st.info("No open positions")
+    else:
+
+        st.dataframe(open_trades, use_container_width=True)
+
+        trade_ids = [t["id"] for t in open_trades]
+
+        selected_id = st.selectbox("Select Open Trade", trade_ids)
+
+        selected_trade = next(t for t in open_trades if t["id"] == selected_id)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown("### ✏️ Edit Trade")
+
+            notes = st.text_area("Notes", selected_trade.get("notes") or "")
+            strategy = st.text_input("Strategy", selected_trade.get("strategy") or "")
+            entry = st.number_input("Entry Price", value=float(selected_trade.get("entry_price") or 0))
+            qty = st.number_input("Quantity", value=int(selected_trade.get("quantity") or 1))
+
+            if st.button("Update Trade"):
+
+                res = requests.put(
+                    f"{API_URL}/trade/{selected_id}",
+                    json={
+                        "notes": notes,
+                        "strategy": strategy,
+                        "entry_price": entry,
+                        "quantity": qty
+                    }
+                )
+
+                if res.status_code == 200:
+                    st.success("Trade updated")
+                    st.rerun()
+                else:
+                    st.error(res.text)
+
+        with col2:
+            st.markdown("### 🔴 Close Trade")
+
+            exit_price = st.number_input("Exit Price", value=0.0)
+
+            if st.button("Close Trade"):
+
+                res = requests.post(
+                    f"{API_URL}/trade/{selected_id}/close",
+                    json={"exit_price": exit_price}
+                )
+
+                if res.status_code == 200:
+                    st.success("Trade closed successfully")
+                    st.rerun()
+                else:
+                    st.error(res.text)
+
+    st.divider()
+
+    # =====================================================
+    # 🟢 CLOSED TRADES
+    # =====================================================
+    st.subheader("🟢 Closed Positions")
+
+    if not closed_trades:
+        st.info("No closed trades yet")
+    else:
+        st.dataframe(closed_trades, use_container_width=True)
 
 # =========================================================
 # 📈 DASHBOARD
