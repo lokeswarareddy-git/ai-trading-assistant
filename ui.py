@@ -401,21 +401,6 @@ elif menu == "Dashboard":
 
     st.divider()
 
-    # =====================================================
-    # 📈 EQUITY CURVE (PRIMARY VISUAL)
-    # =====================================================
-    # st.subheader("Equity Curve")
-
-    # equity = []
-    # running = 0
-
-    # for t in trades:
-    #     running += t.get("pnl") or 0
-    #     equity.append(running)
-
-    # st.line_chart(equity, use_container_width=True)
-
-    # st.divider()
 
 # 🧠 SMART INSIGHTS ENGINE (CLEAN)
 # =====================================================
