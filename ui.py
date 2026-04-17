@@ -87,7 +87,7 @@ def get_cached_data(key, url, ttl=20):
     return data
 
 # =========================================================
-# 🔐 LOGIN / SIGNUP (FIXED + STREAMLIT SAFE)
+# 🔐 LOGIN / SIGNUP 
 # =========================================================
 if menu == "Login":
 
