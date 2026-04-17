@@ -94,7 +94,21 @@ if menu == "Login":
 
     st.header("🔐 Account Access")
 
-    tab1, tab2 = st.tabs(["Login", "Signup"])
+    # ------------------------
+    # Track redirect state
+    # ------------------------
+    if "show_login_after_signup" not in st.session_state:
+        st.session_state.show_login_after_signup = False
+
+    tab_labels = ["Login", "Signup"]
+    tab1, tab2 = st.tabs(tab_labels)
+
+    # ------------------------
+    # AUTO MESSAGE AFTER SIGNUP
+    # ------------------------
+    if st.session_state.show_login_after_signup:
+        st.session_state.show_login_after_signup = False
+        st.info("✅ Signup successful! Please login below 👇")
 
     # ---------------- LOGIN ----------------
     with tab1:
@@ -117,8 +131,10 @@ if menu == "Login":
 
                     st.session_state.user_id = data["user_id"]
                     st.session_state.email = email_login
+                    st.session_state.logged_in = True
 
-                    st.session_state.menu = "Add Trade"   # 🔥 AUTO REDIRECT
+                    # 🔥 redirect to app
+                    st.session_state.menu = "Add Trade"
 
                     st.success(f"Welcome {email_login} 🚀")
                     st.rerun()
@@ -142,11 +158,14 @@ if menu == "Login":
                 )
 
                 if res.status_code == 200:
-                    st.success("Signup successful. Please login.")
+                    st.success("Signup successful. Redirecting to login...")
+
+                    # 🔥 trigger redirect
+                    st.session_state.show_login_after_signup = True
+
+                    st.rerun()
                 else:
                     st.error(res.text)
-
-
 # =========================================================
 # ➕ ADD TRADE
 # =========================================================
