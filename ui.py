@@ -323,19 +323,128 @@ elif menu == "View Trades":
 # =========================================================
 elif menu == "Dashboard":
 
-    st.header("📈 Dashboard")
+    st.header("📊 Trading Insights Dashboard")
 
     stats = get_cached_data(
         "stats",
         f"{API_URL}/stats?user_id={st.session_state.user_id}"
     )
 
-    if not stats:
-        st.info("No stats available yet")
+    trades = get_cached_data(
+        "trades",
+        f"{API_URL}/trades?user_id={st.session_state.user_id}"
+    )
+
+    if not stats or not trades:
+        st.info("No data available yet 🚀")
         st.stop()
 
-    col1, col2, col3 = st.columns(3)
+    # =====================================================
+    # 📊 CORE METRICS
+    # =====================================================
+    pnl = stats.get("total_pnl", 0)
+    win_rate = stats.get("win_rate", 0)
+    total_trades = stats.get("total_trades", 0)
 
-    col1.metric("PnL", stats.get("total_pnl", 0))
-    col2.metric("Win Rate", f"{stats.get('win_rate', 0)}%")
-    col3.metric("Trades", stats.get("total_trades", 0))
+    wins = len([t for t in trades if t.get("pnl", 0) > 0])
+    losses = len([t for t in trades if t.get("pnl", 0) < 0])
+
+    avg_win = 0
+    avg_loss = 0
+
+    win_trades = [t for t in trades if t.get("pnl", 0) > 0]
+    loss_trades = [t for t in trades if t.get("pnl", 0) < 0]
+
+    if win_trades:
+        avg_win = sum(t["pnl"] for t in win_trades) / len(win_trades)
+
+    if loss_trades:
+        avg_loss = sum(t["pnl"] for t in loss_trades) / len(loss_trades)
+
+    profit_factor = (
+        sum(t["pnl"] for t in win_trades) /
+        abs(sum(t["pnl"] for t in loss_trades))
+        if loss_trades else float("inf")
+    )
+
+    # =====================================================
+    # 📊 METRICS UI
+    # =====================================================
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric("Total PnL", f"{pnl:.2f}")
+    col2.metric("Win Rate", f"{win_rate}%")
+    col3.metric("Total Trades", total_trades)
+    col4.metric("Profit Factor", round(profit_factor, 2))
+
+    st.divider()
+
+    # =====================================================
+    # 🧠 BEHAVIOR INSIGHTS
+    # =====================================================
+    st.subheader("🧠 Trading Insights")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Avg Win", round(avg_win, 2))
+        st.metric("Wins", wins)
+
+    with col2:
+        st.metric("Avg Loss", round(avg_loss, 2))
+        st.metric("Losses", losses)
+
+    # =====================================================
+    # ⚠️ SIMPLE BEHAVIOR WARNINGS
+    # =====================================================
+
+    st.subheader("⚠️ Behavioral Signals")
+
+    if win_rate < 40:
+        st.error("Low win rate → strategy needs review")
+
+    if profit_factor < 1:
+        st.warning("Profit factor < 1 → losing strategy")
+
+    if total_trades > 50:
+        st.info("High activity → check overtrading risk")
+
+    if abs(avg_loss) > avg_win:
+        st.warning("Losses bigger than wins → risk issue")
+
+    # =====================================================
+    # 📈 SIMPLE EQUITY CURVE
+    # =====================================================
+
+    st.subheader("📈 Equity Curve (Simple)")
+
+    cumulative = 0
+    equity = []
+
+    for t in trades:
+        pnl_val = t.get("pnl", 0) or 0
+        cumulative += pnl_val
+        equity.append(cumulative)
+
+    st.line_chart(equity)
+
+    # =====================================================
+    # 🏆 BEST / WORST TRADE
+    # =====================================================
+
+    st.subheader("🏆 Extremes")
+
+    if trades:
+
+        best_trade = max(trades, key=lambda x: x.get("pnl", 0))
+        worst_trade = min(trades, key=lambda x: x.get("pnl", 0))
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.success("Best Trade")
+            st.write(best_trade)
+
+        with col2:
+            st.error("Worst Trade")
+            st.write(worst_trade)
