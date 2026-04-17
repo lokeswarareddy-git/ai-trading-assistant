@@ -373,59 +373,59 @@ elif menu == "Dashboard":
 
 # 🧠 SMART INSIGHTS ENGINE (CLEAN)
 # =====================================================
-st.subheader("🧠 Insights")
+    st.subheader("🧠 Insights")
 
-wins = [t for t in trades if (t.get("pnl") or 0) > 0]
-losses = [t for t in trades if (t.get("pnl") or 0) < 0]
+    wins = [t for t in trades if (t.get("pnl") or 0) > 0]
+    losses = [t for t in trades if (t.get("pnl") or 0) < 0]
 
-total_pnl = sum(t.get("pnl") or 0 for t in trades)
+    total_pnl = sum(t.get("pnl") or 0 for t in trades)
 
-avg_win = sum(t["pnl"] for t in wins) / len(wins) if wins else 0
-avg_loss = sum(t["pnl"] for t in losses) / len(losses) if losses else 0
+    avg_win = sum(t["pnl"] for t in wins) / len(wins) if wins else 0
+    avg_loss = sum(t["pnl"] for t in losses) / len(losses) if losses else 0
 
-profit_factor = (
-    sum(t["pnl"] for t in wins) /
-    abs(sum(t["pnl"] for t in losses))
-    if losses else 0
-)
+    profit_factor = (
+        sum(t["pnl"] for t in wins) /
+        abs(sum(t["pnl"] for t in losses))
+        if losses else 0
+    )
 
-# =====================================================
-# 🎯 1. EDGE QUALITY
-# =====================================================
-if profit_factor > 1.5 and win_rate > 50:
-    st.success("Strong edge detected — your strategy is working")
-elif profit_factor < 1:
-    st.error("No edge — you're losing more than winning")
-else:
-    st.info("Weak edge — needs improvement")
+    # =====================================================
+    # 🎯 1. EDGE QUALITY
+    # =====================================================
+    if profit_factor > 1.5 and win_rate > 50:
+        st.success("Strong edge detected — your strategy is working")
+    elif profit_factor < 1:
+        st.error("No edge — you're losing more than winning")
+    else:
+        st.info("Weak edge — needs improvement")
 
-# =====================================================
-# ⚖️ 2. RISK MANAGEMENT
-# =====================================================
-if abs(avg_loss) > avg_win:
-    st.warning("Losses are bigger than wins — risk management issue")
-else:
-    st.success("Risk-reward looks healthy")
+    # =====================================================
+    # ⚖️ 2. RISK MANAGEMENT
+    # =====================================================
+    if abs(avg_loss) > avg_win:
+        st.warning("Losses are bigger than wins — risk management issue")
+    else:
+        st.success("Risk-reward looks healthy")
 
-# =====================================================
-# 🔁 3. CONSISTENCY CHECK
-# =====================================================
-pnl_values = [t.get("pnl") or 0 for t in trades]
+    # =====================================================
+    # 🔁 3. CONSISTENCY CHECK
+    # =====================================================
+    pnl_values = [t.get("pnl") or 0 for t in trades]
 
-volatility = sum(abs(p) for p in pnl_values) / max(len(pnl_values), 1)
+    volatility = sum(abs(p) for p in pnl_values) / max(len(pnl_values), 1)
 
-if volatility > abs(total_pnl):
-    st.warning("Inconsistent performance — results are unstable")
-else:
-    st.success("Consistent trading behavior")
+    if volatility > abs(total_pnl):
+        st.warning("Inconsistent performance — results are unstable")
+    else:
+        st.success("Consistent trading behavior")
 
-# =====================================================
-# 🎯 4. EXECUTION INSIGHT
-# =====================================================
-open_trades = [t for t in trades if t.get("status") == "OPEN"]
+    # =====================================================
+    # 🎯 4. EXECUTION INSIGHT
+    # =====================================================
+    open_trades = [t for t in trades if t.get("status") == "OPEN"]
 
-if len(open_trades) > 5:
-    st.warning("Too many open trades — possible overtrading")
+    if len(open_trades) > 5:
+        st.warning("Too many open trades — possible overtrading")
 
-if len(trades) > 10 and len(wins) == 0:
-    st.error("No winning trades yet — review strategy immediately")
+    if len(trades) > 10 and len(wins) == 0:
+        st.error("No winning trades yet — review strategy immediately")
