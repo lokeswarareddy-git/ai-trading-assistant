@@ -88,84 +88,72 @@ def get_cached_data(key, url, ttl=20):
 
 
 # =========================================================
-# 🔐 LOGIN / SIGNUP
+# 🔐 LOGIN / SIGNUP (FIXED UX)
 # =========================================================
 if menu == "Login":
 
     st.header("🔐 Account Access")
 
     # ------------------------
-    # Track redirect state
+    # STATE CONTROL
     # ------------------------
-    if "show_login_after_signup" not in st.session_state:
-        st.session_state.show_login_after_signup = False
+    if "auth_mode" not in st.session_state:
+        st.session_state.auth_mode = "Login"
 
-    tab_labels = ["Login", "Signup"]
-    tab1, tab2 = st.tabs(tab_labels)
-
-    # ------------------------
-    # AUTO MESSAGE AFTER SIGNUP
-    # ------------------------
-    if st.session_state.show_login_after_signup:
-        st.session_state.show_login_after_signup = False
-        st.info("✅ Signup successful! Please login below 👇")
+    auth_mode = st.radio(
+        "Choose Option",
+        ["Login", "Signup"],
+        index=0 if st.session_state.auth_mode == "Login" else 1,
+        horizontal=True
+    )
 
     # ---------------- LOGIN ----------------
-    with tab1:
+    if auth_mode == "Login":
 
         email_login = st.text_input("Email", key="login_email")
         password_login = st.text_input("Password", type="password", key="login_pass")
 
         if st.button("Login"):
 
-            if not email_login or not password_login:
-                st.warning("Please fill all fields")
+            res = requests.post(
+                f"{API_URL}/login",
+                json={"email": email_login, "password": password_login}
+            )
+
+            if res.status_code == 200:
+                data = res.json()
+
+                st.session_state.user_id = data["user_id"]
+                st.session_state.email = email_login
+                st.session_state.logged_in = True
+
+                st.success("Login successful 🚀")
+                st.rerun()
             else:
-                res = requests.post(
-                    f"{API_URL}/login",
-                    json={"email": email_login, "password": password_login}
-                )
-
-                if res.status_code == 200:
-                    data = res.json()
-
-                    st.session_state.user_id = data["user_id"]
-                    st.session_state.email = email_login
-                    st.session_state.logged_in = True
-
-                    # 🔥 redirect to app
-                    st.session_state.menu = "Add Trade"
-
-                    st.success(f"Welcome {email_login} 🚀")
-                    st.rerun()
-                else:
-                    st.error("Invalid credentials")
+                st.error("Invalid credentials")
 
     # ---------------- SIGNUP ----------------
-    with tab2:
+    elif auth_mode == "Signup":
 
         email_signup = st.text_input("Email", key="signup_email")
         password_signup = st.text_input("Password", type="password", key="signup_pass")
 
         if st.button("Signup"):
 
-            if not email_signup or not password_signup:
-                st.warning("Please fill all fields")
+            res = requests.post(
+                f"{API_URL}/signup",
+                json={"email": email_signup, "password": password_signup}
+            )
+
+            if res.status_code == 200:
+                st.success("Signup successful! Switching to Login...")
+
+                # 🔥 AUTO SWITCH
+                st.session_state.auth_mode = "Login"
+                st.rerun()
+
             else:
-                res = requests.post(
-                    f"{API_URL}/signup",
-                    json={"email": email_signup, "password": password_signup}
-                )
-
-                if res.status_code == 200:
-                    st.success("Signup successful. Redirecting to login...")
-
-                    # 🔥 trigger redirect
-                    st.session_state.show_login_after_signup = True
-
-                    st.rerun()
-                else:
-                    st.error(res.text)
+                st.error(res.text)
 # =========================================================
 # ➕ ADD TRADE
 # =========================================================
