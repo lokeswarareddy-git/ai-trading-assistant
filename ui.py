@@ -358,48 +358,74 @@ elif menu == "Dashboard":
     # =====================================================
     # 📈 EQUITY CURVE (PRIMARY VISUAL)
     # =====================================================
-    st.subheader("Equity Curve")
+    # st.subheader("Equity Curve")
 
-    equity = []
-    running = 0
+    # equity = []
+    # running = 0
 
-    for t in trades:
-        running += t.get("pnl") or 0
-        equity.append(running)
+    # for t in trades:
+    #     running += t.get("pnl") or 0
+    #     equity.append(running)
 
-    st.line_chart(equity, use_container_width=True)
+    # st.line_chart(equity, use_container_width=True)
 
-    st.divider()
+    # st.divider()
 
-    # =====================================================
-    # 🧠 QUICK INSIGHTS (ONE CLEAN BLOCK)
-    # =====================================================
-    st.subheader("Insights")
+# 🧠 SMART INSIGHTS ENGINE (CLEAN)
+# =====================================================
+st.subheader("🧠 Insights")
 
-    avg_win = sum(t["pnl"] for t in trades if (t.get("pnl") or 0) > 0) / max(wins, 1)
-    avg_loss = sum(t["pnl"] for t in trades if (t.get("pnl") or 0) < 0) / max(losses, 1)
+wins = [t for t in trades if (t.get("pnl") or 0) > 0]
+losses = [t for t in trades if (t.get("pnl") or 0) < 0]
 
-    profit_factor = (
-        sum(t["pnl"] for t in trades if (t.get("pnl") or 0) > 0) /
-        abs(sum(t["pnl"] for t in trades if (t.get("pnl") or 0) < 0) or 1)
-    )
+total_pnl = sum(t.get("pnl") or 0 for t in trades)
 
-    col1, col2, col3 = st.columns(3)
+avg_win = sum(t["pnl"] for t in wins) / len(wins) if wins else 0
+avg_loss = sum(t["pnl"] for t in losses) / len(losses) if losses else 0
 
-    col1.metric("Avg Win", f"{avg_win:.2f}")
-    col2.metric("Avg Loss", f"{avg_loss:.2f}")
-    col3.metric("Profit Factor", f"{profit_factor:.2f}")
+profit_factor = (
+    sum(t["pnl"] for t in wins) /
+    abs(sum(t["pnl"] for t in losses))
+    if losses else 0
+)
 
-    st.divider()
+# =====================================================
+# 🎯 1. EDGE QUALITY
+# =====================================================
+if profit_factor > 1.5 and win_rate > 50:
+    st.success("Strong edge detected — your strategy is working")
+elif profit_factor < 1:
+    st.error("No edge — you're losing more than winning")
+else:
+    st.info("Weak edge — needs improvement")
 
-    # =====================================================
-    # ⚡ STATUS BAR (SINGLE MESSAGE ONLY)
-    # =====================================================
-    st.subheader("Status")
+# =====================================================
+# ⚖️ 2. RISK MANAGEMENT
+# =====================================================
+if abs(avg_loss) > avg_win:
+    st.warning("Losses are bigger than wins — risk management issue")
+else:
+    st.success("Risk-reward looks healthy")
 
-    if win_rate >= 55 and profit_factor >= 1.5:
-        st.success("Healthy trading performance")
-    elif win_rate < 40:
-        st.error("Low win rate — strategy needs attention")
-    else:
-        st.info("Stable but unoptimized performance")
+# =====================================================
+# 🔁 3. CONSISTENCY CHECK
+# =====================================================
+pnl_values = [t.get("pnl") or 0 for t in trades]
+
+volatility = sum(abs(p) for p in pnl_values) / max(len(pnl_values), 1)
+
+if volatility > abs(total_pnl):
+    st.warning("Inconsistent performance — results are unstable")
+else:
+    st.success("Consistent trading behavior")
+
+# =====================================================
+# 🎯 4. EXECUTION INSIGHT
+# =====================================================
+open_trades = [t for t in trades if t.get("status") == "OPEN"]
+
+if len(open_trades) > 5:
+    st.warning("Too many open trades — possible overtrading")
+
+if len(trades) > 10 and len(wins) == 0:
+    st.error("No winning trades yet — review strategy immediately")
