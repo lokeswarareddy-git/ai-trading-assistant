@@ -318,12 +318,10 @@ elif menu == "View Trades":
     else:
         st.dataframe(closed_trades, use_container_width=True)
 
-# =========================================================
-# 📈 DASHBOARD
-# =========================================================
 elif menu == "Dashboard":
 
-    st.header("📊 Trading Insights Dashboard")
+    st.header("📊 Performance Dashboard")
+    st.caption("Clean view of your trading performance")
 
     stats = get_cached_data(
         "stats",
@@ -336,115 +334,72 @@ elif menu == "Dashboard":
     )
 
     if not stats or not trades:
-        st.info("No data available yet 🚀")
+        st.info("No data yet — start trading 🚀")
         st.stop()
 
     # =====================================================
-    # 📊 CORE METRICS
+    # 📊 TOP METRICS (CLEAN ROW)
     # =====================================================
     pnl = stats.get("total_pnl", 0)
     win_rate = stats.get("win_rate", 0)
-    total_trades = stats.get("total_trades", 0)
+    total = stats.get("total_trades", 0)
 
-    wins = len([t for t in trades if t.get("pnl", 0) > 0])
-    losses = len([t for t in trades if t.get("pnl", 0) < 0])
+    wins = sum(1 for t in trades if (t.get("pnl") or 0) > 0)
+    losses = sum(1 for t in trades if (t.get("pnl") or 0) < 0)
 
-    avg_win = 0
-    avg_loss = 0
+    col1, col2, col3 = st.columns(3)
 
-    win_trades = [t for t in trades if t.get("pnl", 0) > 0]
-    loss_trades = [t for t in trades if t.get("pnl", 0) < 0]
-
-    if win_trades:
-        avg_win = sum(t["pnl"] for t in win_trades) / len(win_trades)
-
-    if loss_trades:
-        avg_loss = sum(t["pnl"] for t in loss_trades) / len(loss_trades)
-
-    profit_factor = (
-        sum(t["pnl"] for t in win_trades) /
-        abs(sum(t["pnl"] for t in loss_trades))
-        if loss_trades else float("inf")
-    )
-
-    # =====================================================
-    # 📊 METRICS UI
-    # =====================================================
-    col1, col2, col3, col4 = st.columns(4)
-
-    col1.metric("Total PnL", f"{pnl:.2f}")
-    col2.metric("Win Rate", f"{win_rate}%")
-    col3.metric("Total Trades", total_trades)
-    col4.metric("Profit Factor", round(profit_factor, 2))
+    col1.metric("PnL", f"{pnl:.2f}")
+    col2.metric("Win Rate", f"{win_rate:.1f}%")
+    col3.metric("Trades", total)
 
     st.divider()
 
     # =====================================================
-    # 🧠 BEHAVIOR INSIGHTS
+    # 📈 EQUITY CURVE (PRIMARY VISUAL)
     # =====================================================
-    st.subheader("🧠 Trading Insights")
+    st.subheader("Equity Curve")
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("Avg Win", round(avg_win, 2))
-        st.metric("Wins", wins)
-
-    with col2:
-        st.metric("Avg Loss", round(avg_loss, 2))
-        st.metric("Losses", losses)
-
-    # =====================================================
-    # ⚠️ SIMPLE BEHAVIOR WARNINGS
-    # =====================================================
-
-    st.subheader("⚠️ Behavioral Signals")
-
-    if win_rate < 40:
-        st.error("Low win rate → strategy needs review")
-
-    if profit_factor < 1:
-        st.warning("Profit factor < 1 → losing strategy")
-
-    if total_trades > 50:
-        st.info("High activity → check overtrading risk")
-
-    if abs(avg_loss) > avg_win:
-        st.warning("Losses bigger than wins → risk issue")
-
-    # =====================================================
-    # 📈 SIMPLE EQUITY CURVE
-    # =====================================================
-
-    st.subheader("📈 Equity Curve (Simple)")
-
-    cumulative = 0
     equity = []
+    running = 0
 
     for t in trades:
-        pnl_val = t.get("pnl", 0) or 0
-        cumulative += pnl_val
-        equity.append(cumulative)
+        running += t.get("pnl") or 0
+        equity.append(running)
 
-    st.line_chart(equity)
+    st.line_chart(equity, use_container_width=True)
+
+    st.divider()
 
     # =====================================================
-    # 🏆 BEST / WORST TRADE
+    # 🧠 QUICK INSIGHTS (ONE CLEAN BLOCK)
     # =====================================================
+    st.subheader("Insights")
 
-    st.subheader("🏆 Extremes")
+    avg_win = sum(t["pnl"] for t in trades if (t.get("pnl") or 0) > 0) / max(wins, 1)
+    avg_loss = sum(t["pnl"] for t in trades if (t.get("pnl") or 0) < 0) / max(losses, 1)
 
-    if trades:
+    profit_factor = (
+        sum(t["pnl"] for t in trades if (t.get("pnl") or 0) > 0) /
+        abs(sum(t["pnl"] for t in trades if (t.get("pnl") or 0) < 0) or 1)
+    )
 
-        best_trade = max(trades, key=lambda x: x.get("pnl", 0))
-        worst_trade = min(trades, key=lambda x: x.get("pnl", 0))
+    col1, col2, col3 = st.columns(3)
 
-        col1, col2 = st.columns(2)
+    col1.metric("Avg Win", f"{avg_win:.2f}")
+    col2.metric("Avg Loss", f"{avg_loss:.2f}")
+    col3.metric("Profit Factor", f"{profit_factor:.2f}")
 
-        with col1:
-            st.success("Best Trade")
-            st.write(best_trade)
+    st.divider()
 
-        with col2:
-            st.error("Worst Trade")
-            st.write(worst_trade)
+    # =====================================================
+    # ⚡ STATUS BAR (SINGLE MESSAGE ONLY)
+    # =====================================================
+    st.subheader("Status")
+
+    if win_rate >= 55 and profit_factor >= 1.5:
+        st.success("Healthy trading performance")
+    elif win_rate < 40:
+        st.error("Low win rate — strategy needs attention")
+    else:
+        st.info("Stable but unoptimized performance")
